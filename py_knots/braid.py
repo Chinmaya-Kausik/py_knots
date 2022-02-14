@@ -26,7 +26,7 @@ def transpose(n: int, lst: List) -> List:
     return lst[0:n] + [lst[n+1], lst[n]] + lst[n+2:]
 
 
-# Class for braids. Method for making spline graphs.
+# Class for braids. Methods related to its permutation.
 @dataclass(frozen=True)
 class Braid:
     braid: List[int]
@@ -77,39 +77,49 @@ class Braid:
     def ct_knots(self) -> int:
         return len(self.cycle_decomp)
 
-    # Cycles grouped by color.
-    def cyc_by_color(self, col_list: List[int]) -> List[List[List[int]]]:
-        cyc_decomp = self.cycle_decomp
-        cyc_by_col = [[] for i in range(max(col_list)+1)]
 
-        for color in range(0, max(col_list)+1):
+# Class for coloured braids.
+# Extra data is col_list - a list of colours for each knot.
+@dataclass(frozen = True)
+class ColBraid(Braid):
+    col_list: List[int]
+
+    # Cycles grouped by color.
+    @cached_property
+    def cyc_by_color(self) -> List[List[List[int]]]:
+        cyc_decomp = self.cycle_decomp
+        cyc_by_col = [[] for i in range(max(self.col_list)+1)]
+
+        for color in range(0, max(self.col_list)+1):
             for i in range(0, len(cyc_decomp)):
-                if col_list[i]==color:
+                if self.col_list[i]==color:
                     cyc_by_col[color] += [cyc_decomp[i]]
 
         return cyc_by_col
 
     # Generates the vertices for the spline graph.
-    def gen_vertices(self, col_list: List[int]) -> List[SVertex]:
-        vertices = []
-        cyc_by_col = self.cyc_by_color(col_list)
+    @cached_property
+    def vertices(self) -> List[SVertex]:
+        vert_list = []
+        cyc_by_col = self.cyc_by_color
 
         for color in range(len(cyc_by_col)):
             for cyc in cyc_by_col[color]:
                 for vert in cyc:
-                    vertices.append(SVertex(len(vertices), color))
+                    vert_list.append(SVertex(len(vert_list), color))
 
-        return vertices
+        return vert_list
 
     # The permutation of vertices before the braid is applied.
     # This is non-trivial because vertices are generated grouped by color,
     # and not by the initial permutation.
-    def init_vert_perm(self, col_list: List[int]) -> List[SVertex]:
+    @cached_property
+    def init_vert_perm(self) -> List[SVertex]:
         vert_perm = list(range(self.strands))
-        vertices = self.gen_vertices(col_list)
+        vertices = self.vertices
 
         flat_cyc_by_color = []
-        for color in self.cyc_by_color(col_list):
+        for color in self.cyc_by_color:
             for cyc in color:
                 for vert_ind in cyc:
                     flat_cyc_by_color.append(vert_ind)
@@ -120,8 +130,8 @@ class Braid:
         return vert_perm
 
     # Initializes an SGraph with only the right vertices and no edges.
-    def init_graph(self, col_list: List[int], col_signs: List[int]) -> SGraph:
-        vert = self.gen_vertices(col_list)
+    def init_graph(self, col_signs: List[int]) -> SGraph:
+        vert = self.vertices
 
         empty_vve = {}
         empty_ve = {}
@@ -137,10 +147,10 @@ class Braid:
         return SGraph(vert, [], empty_vve, empty_ve, col_signs)
 
     # Goes through braid generators, adding clasps and half-twists.
-    def add_clasps_hts(self, col_list: List[int], graph: SGraph) -> SGraph:
+    def add_clasps_hts(self, graph: SGraph) -> SGraph:
 
         braid1 = self.braid
-        vert_perm = self.init_vert_perm(col_list)
+        vert_perm = self.init_vert_perm
 
         while(braid1 != []):
 
@@ -184,7 +194,6 @@ class Braid:
                     (vert_perm[i_vert].num < lower.num)):
                         clasps += [vert_perm[i_vert]]
 
-
                 # Add left clasps
                 for j in range(0, len(clasps)):
                     graph.add_edge(upper, clasps[j], -2, upper.col)
@@ -202,9 +211,10 @@ class Braid:
         return graph
 
     # List of the first vertices in each color.
-    def col_first_verts(self, col_list) -> List[SVertex]:
-        vert = self.gen_vertices(col_list)
-        tally = list(range(max(col_list)+1))
+    @cached_property
+    def col_first_verts(self) -> List[SVertex]:
+        vert = self.vertices
+        tally = list(range(max(self.col_list)+1))
         col_1st_verts = []
 
         for v in vert:
