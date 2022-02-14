@@ -144,7 +144,7 @@ class ColBraid(Braid):
         for v in vert:
             empty_ve[v] = []
 
-        return SGraph(vert, [], empty_vve, empty_ve, col_signs)
+        return SGraph(vert, [], empty_vve, empty_ve, len(col_signs), col_signs)
 
     # Goes through braid generators, adding clasps and half-twists.
     def add_clasps_hts(self, graph: SGraph) -> SGraph:
@@ -165,7 +165,7 @@ class ColBraid(Braid):
             i = abs(braid1[0])
             sgn = sign(braid1[0])
 
-            if(sign(i) == 1):
+            if(sgn == 1):
                 below = i
             else:
                 below = i-1
@@ -186,7 +186,6 @@ class ColBraid(Braid):
             # Otherwise (if the upper strand has a lower colour), add clasps
             else:
                 clasps = []
-
                 # Find clasp vertices
                 for i_vert in range(0, len(vert_perm)):
                     if((i_vert < i-1) and
@@ -209,6 +208,14 @@ class ColBraid(Braid):
                 vert_perm = transpose(i-1, vert_perm)
 
         return graph
+
+    def make_graph(self, col_signs: List[int]) -> SGraph:
+        graph = self.init_graph(col_signs)
+        self.add_clasps_hts(graph)
+        graph.colors_connected()
+        graph.make_complete()
+        return graph
+
 
     
 

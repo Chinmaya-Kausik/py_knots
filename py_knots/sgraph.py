@@ -1,5 +1,6 @@
 import math
 from typing import List, Tuple, Callable, Dict
+from functools import cached_property
 from dataclasses import dataclass
 
 
@@ -27,9 +28,10 @@ class SGraph:
     edges: List[SEdge]
     vve: Dict[Tuple[SVertex, SVertex], List[SEdge]]
     ve: Dict[SVertex, List[SEdge]]
+    colors: int
     col_signs: List[int]
 
-    # Add a new edge to the front of the graph. Produces a new graph.
+    # Add a new edge to the front of the graph.
     def add_edge(self, init: SVertex, term: SVertex,
                  typ: int, col: int):
     
@@ -40,7 +42,7 @@ class SGraph:
         self.ve[init] = self.ve[init] + [new_edge]
         self.ve[term] = self.ve[term] + [new_edge]
 
-    # Add a new edge to the back of the graph. Produces a new graph.
+    # Add a new edge to the back of the graph.
     def add_init_edge(self, init: SVertex, term: SVertex,
                  typ: int, col: int):
     
@@ -50,6 +52,17 @@ class SGraph:
         self.vve[(init, term)] = [new_edge] + self.vve[(init, term)]
         self.ve[init] = [new_edge] + self.ve[init]
         self.ve[term] = [new_edge] + self.ve[term]
+
+    # Deletes an edge from the graph
+    def delete_edge(self, edge: SEdge):
+        self.edges.remove(edge)
+        self.vve[(edge.initial, edge.terminal)].remove(edge)
+        self.ve[edge.initial].remove(edge)
+        self.ve[edge.terminal].remove(edge)
+
+    # Cleans up redundant pairs of edges.
+    def clean_graph(self):
+        pass
 
     # Prints the abstract data of the graph
     # List of vertex indices, then edges = (init, term, type)
@@ -64,7 +77,7 @@ class SGraph:
     @cached_property
     def col_first_verts(self) -> List[SVertex]:
         vert = self.vert
-        tally = list(range(max(self.col_list)+1))
+        tally = list(range(self.colors))
         col_1st_verts = []
 
         for v in vert:
@@ -82,7 +95,7 @@ class SGraph:
             v0 = vert[0]
             v1 = vert[1]
             if(v0.col == v1.col):
-                if(vve[(v0, v1)] == []):
+                if(self.vve[(v0, v1)] == []):
                     self.add_edge(v0, v1, 1, v0.col)
                     self.add_edge(v0, v1, -1, v0.col)
             vert = vert[1:]
@@ -94,6 +107,6 @@ class SGraph:
             for color2 in range(len(v_col)):
                 if(color1 < color2):
                     if(self.vve[(v_col[color1], v_col[color2])] == []):
-                        graph.add_edge(v_col[color1], v_col[color2], 2, color1)
-                        graph.add_edge(v_col[color1], v_col[color2], -2, color1)
-    
+                        self.add_edge(v_col[color1], v_col[color2], 2, color1)
+                        self.add_edge(v_col[color1], v_col[color2], -2, color1)
+

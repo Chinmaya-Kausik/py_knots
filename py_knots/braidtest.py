@@ -1,10 +1,13 @@
 from braid import *
 
-p = Braid([1, 2, 1], 3)
-p = ColBraid([1, 2, 1], 3, [0, 1])
-col_list = [0, 1]
-col_signs = [1, 1]
+p = Braid([2, -3, -3, -2, 4], 5)
+
+
 print(p.cycle_decomp)
+
+p = ColBraid([2, -3, -3, -2, 4], 5, [0, 0, 1, 2])
+col_list = [0, 0, 1, 2]
+col_signs = [1, 1, 1, 1]
 
 
 print("Braid", p.braid)
@@ -17,4 +20,5 @@ print("\nChecking stuff now")
 graph = p.init_graph(col_signs)
 p.add_clasps_hts(graph).edges
 graph.print_data()
-print(p.col_first_verts)
+print(graph.col_first_verts)
+p.make_graph([1, 1, 1, 1]).print_data()
