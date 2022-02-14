@@ -95,24 +95,26 @@ class Braid:
 
             i = abs(braid.head)
 
+            if(sign(i) == 1):
+                lower = i
+            else:
+                lower = i-1
+
+            upper = 2*i-1-lower
+
             # Half-twist if the current transposition is within the same colour.
             if(vert_perm[i].col == vert_perm[i-1].col):
                 braid1 = braid1[1:]
                 graph.add_edge(vert_perm[i-1], vert_perm[i], sign(i),
                                 vert_perm[i].col)
 
+            elif(vert_perm[lower].)
+
             # Otherwise, add clasps.
             else:
                 clasps = []
 
-                if(sign(i) == 1):
-                    upper = i 
-                else:
-                    upper = i-1
-
-                lower = 2*i-1-upper
-
-                for l in range(0, len(vert_perm)):
-                    if((l < j-1) and (vert_perm[j].col > vert_perm[i].col) and (vert_perm[i].num)
+                for i_vert in range(0, len(vert_perm)):
+                    if((i_vert < i-1) and (vert_perm[i_vert].col > vert_perm[i].col) and (vert_perm[i].num)
 
 
