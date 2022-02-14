@@ -5,14 +5,17 @@ from dataclasses import dataclass
 
 
 # Class for vertices
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class SVertex:
     num: int
     col: int
 
+    def __repr__(self):
+        return "V({}, {})".format(self.num, self.col)
+
 
 # Class for edges
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class SEdge:
     initial: SVertex
     terminal: SVertex
@@ -20,12 +23,63 @@ class SEdge:
     typ: int
     col: int
 
+    def __repr__(self):
+        return "E({}, {}, {}, {}, {})".format(self.initial,
+            self.terminal, self.num, self.typ, self.col)
 
-def check_loop(lst: List[SEdge]) -> bool:
+
+# Class for oriented edges
+@dataclass(repr=False, init=False)
+class OEdge():
+    sign: int
+
+    def __init__(self, edge: SEdge, sign: int):
+        self.initial = edge.initial
+        self.terminal = edge.terminal
+
+        self.num = edge.num
+        self.typ = edge.typ
+        self.col = edge.col
+        self.sign = sign
+
+    def __repr__(self):
+        return "OE({}, {}, {}, {}, {}, {})".format(self.initial,
+            self.terminal, self.num, self.typ, self.col, self.sign)
+
+    # The true initial vertex, accounting for orientation.
+    @cached_property
+    def true_initial(self) -> SVertex:
+        if(self.sign == 1):
+            return self.initial
+        else:
+            return self.terminal
+
+    # The true terminal vertex, accounting for orientation.
+    @cached_property
+    def true_terminal(self) -> SVertex:
+        if(self.sign == 1):
+            return self.terminal
+        else:
+            return self.initial
+
+
+# Checks if a list of edges forms a loop.
+def check_loop(lst: List[OEdge]) -> bool:
     is_loop = True 
-    for i in range(len(lst)):
-        is_loop = is_loop and(lst[i].terminal == lst[i+1].initial)
-    return is_loop and (lst[-1].terminal == lst[0].initial)
+    for i in range(len(lst)-1):
+        is_loop = is_loop and (lst[i].true_terminal == lst[i+1].true_initial)
+
+    return is_loop and (lst[-1].true_terminal == lst[0].true_initial)
+
+
+# Class for loops in spline graphs.
+@dataclass
+class Loop:
+    edges: List[OEdge]
+
+    def __post_init__(self):
+        assert check_loop(self.edges), "This list does not form a loop: "\
+            +str(self.edges)
 
 
 # Class for spline graphs of clasp complexes
@@ -37,6 +91,12 @@ class SGraph:
     ve: Dict[SVertex, List[SEdge]]
     colors: int
     col_signs: List[int]
+
+    """
+
+    ------- Tools for making the final spline graph ------
+
+    """
 
     # Add a new edge to the front of the graph.
     def add_edge(self, init: SVertex, term: SVertex,
@@ -151,8 +211,14 @@ class SGraph:
                     self.add_edge(v_col[color1], v_col[color2], 2, color1)
                     self.add_edge(v_col[color1], v_col[color2], -2, color1)
 
+    """
+
+    ------ Now moving on to generating a homology basis ------
+
+    """
+
     # Gives a value to a lift (or not) of a vertex.
-    # If not lifted, the value is just its index.
+    # If it is not lifted (lift = 0), the value is just its index.
     # Otherwise add or subtract 0.5 depending on the direction of the lift
     def value(self, vert: SVertex, lift: int) -> float:
         assert vert in self.vert, "The vertex " + str(vert) + \
@@ -165,16 +231,70 @@ class SGraph:
 
     # Finds the rightmost edge between two vertices.
     def max_edge(self, init: SVertex, term: SVertex) -> SEdge:
-        self.vve[(init, term)][-1]
+        return self.vve[(init, term)][-1]
 
-    def local_graph_hom_basis(self, col: int) -> List:
+    # Finds the homology basis of the subgraph
+    # corresponding to a given color
+    def single_color_hom_basis(self, col: int) -> List[Loop]:
+        hom_basis = []
+        i = self.vert.index(self.col_first_verts[col])
+        n = len(self.vert)
+
+        while((i<n-1) and (self.vert[i+1].col == col)):
+            v1 = self.vert[i]
+            v2 = self.vert[i+1]
+            m_edge = OEdge(self.max_edge(v1, v2), -1)
+            for edge in self.vve[(v1, v2)][:-1]:
+                o_edge = OEdge(edge, 1)
+
+                hom_basis.append(Loop([o_edge, m_edge]))
+            i+=1
+
+        return hom_basis
+
+    # Combines the homology bases for subgraphs for individual colors.
+    def all_single_color_homology_bases(self):
+        hom_basis = []
+        for col in range(self.colors):
+            hom_basis += self.single_color_hom_basis(col)
+        return hom_basis
+
+    # Finds the rightmost edge connecting two colors.
+    # Enter the lower color first.
+    def max_connector(self, col1: int, col2: int) -> SEdge:
+        for edge in reversed(self.edges):
+            if((edge.initial.col, edge.terminal.col) == (col1, col2)):
+                return edge
+
+    # Connects two vertices of the same color.
+    def connect_vertices(self, v1: SVertex, v2: SVertex) -> List[OEdge]:
+        assert v1.col == v2.col,\
+            "The vertices {} {} have different colors".format(v1, v2)
+
+        path = []
+        if(v1.num > v2.num):
+            num = v1.num
+            while(num>v2.num):
+                vert_1 = self.vert[num]
+                vert_2 = self.vert[num-1]
+                path.append(OEdge(self.max_edge(vert_2, vert_1), -1))
+                num -= 1
+        else:
+            num = v1.num
+            while(num<v2.num):
+                vert_1 = self.vert[num]
+                vert_2 = self.vert[num+1]
+                path.append(OEdge(self.max_edge(vert_1, vert_2), -1))
+                num += 1
+
+    # Completes an edge into a loop
+    def make_loop(edge: SEdge) -> Loop:
+        v1 = edge.initial
+        v2 = edge.terminal
+        assert v1.col != v2.col,\
+            "The endpoints {} {} have the same color".format(v1, v2)
         pass
 
+    # Finds the homology basis corresponding
+    # to the local graph between two given colors.
 
-# Class for loops in spline graphs.
-@dataclass
-class Loop:
-    edges: List[SEdge]
-
-    def __post_init__(self):
-        assert check_loop(edges), "This list does not form a loop: " + str(edges)
