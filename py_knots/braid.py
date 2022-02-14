@@ -72,10 +72,12 @@ class Braid:
 
         return cyc_decomp
 
+    # Number of different knots in the link.
     @cached_property
-    def ct_components(self) -> int:
+    def ct_knots(self) -> int:
         return len(self.cycle_decomp)
 
+    # Cycles grouped by color.
     def cyc_by_color(self, col_list: List[int]) -> List[List[List[int]]]:
         cyc_decomp = self.cycle_decomp
         cyc_by_col = [[] for i in range(max(col_list)+1)]
@@ -87,6 +89,7 @@ class Braid:
 
         return cyc_by_col
 
+    # Generates the vertices for the spline graph.
     def gen_vertices(self, col_list: List[int]) -> List[SVertex]:
         vertices = []
         cyc_by_col = self.cyc_by_color(col_list)
@@ -98,6 +101,9 @@ class Braid:
 
         return vertices
 
+    # The permutation of vertices before the braid is applied.
+    # This is non-trivial because vertices are generated grouped by color,
+    # and not by the initial permutation.
     def init_vert_perm(self, col_list: List[int]) -> List[SVertex]:
         vert_perm = list(range(self.strands))
         vertices = self.gen_vertices(col_list)
@@ -113,7 +119,7 @@ class Braid:
 
         return vert_perm
 
-    # Initializes an SGraph with only the right vertices
+    # Initializes an SGraph with only the right vertices and no edges.
     def init_graph(self, col_list: List[int], col_signs: List[int]) -> SGraph:
         vert = self.gen_vertices(col_list)
 
@@ -176,7 +182,8 @@ class Braid:
                     if((i_vert < i-1) and
                         (vert_perm[i_vert].col > upper.col) and
                     (vert_perm[i_vert].num < lower.num)):
-                        clasps += vert_perm[i_vert]
+                        clasps += [vert_perm[i_vert]]
+
 
                 # Add left clasps
                 for j in range(0, len(clasps)):
@@ -194,8 +201,28 @@ class Braid:
 
         return graph
 
+    # List of the first vertices in each color.
+    def col_first_verts(self, col_list) -> List[SVertex]:
+        vert = self.gen_vertices(col_list)
+        tally = list(range(max(col_list)+1))
+        col_1st_verts = []
+
+        for v in vert:
+            if(v.col in tally):
+                col_1st_verts.append(v)
+                tally = tally[1:]
+
+        return col_1st_verts
+
     def colors_connected(self, graph: SGraph) -> SGraph:
-        pass
+
+        vert = graph.vert
+
+        for color in range(len(graph.col_signs)):
+            pass
+
+
+        
 
 
 
