@@ -21,6 +21,13 @@ class SEdge:
     col: int
 
 
+def check_loop(lst: List[SEdge]) -> bool:
+    is_loop = True 
+    for i in range(len(lst)):
+        is_loop = is_loop and(lst[i].terminal == lst[i+1].initial)
+    return is_loop and (lst[-1].terminal == lst[0].initial)
+
+
 # Class for spline graphs of clasp complexes
 @dataclass
 class SGraph:
@@ -60,9 +67,27 @@ class SGraph:
         self.ve[edge.initial].remove(edge)
         self.ve[edge.terminal].remove(edge)
 
+    # Finds and deletes a redundant pair of edges in the graph
+    def delete_redundant_pair(self) -> bool:
+        exists = False
+        i = 0
+        while(i < len(self.edges)-1):
+            if((self.edges[i].initial == self.edges[i+1].initial) and
+                (self.edges[i].terminal == self.edges[i+1].terminal) and
+            (self.edges[i].typ == -self.edges[i+1].typ)):
+                self.delete_edge(self.edges[i])
+                self.delete_edge(self.edges[i])
+                exists = True
+            else:
+                i +=1
+
+        return exists
+
     # Cleans up redundant pairs of edges.
     def clean_graph(self):
-        pass
+        exists = True
+        while(exists):
+            exists = self.delete_redundant_pair()
 
     # Prints the abstract data of the graph
     # List of vertex indices, then edges = (init, term, type)
@@ -88,7 +113,7 @@ class SGraph:
         return col_1st_verts
 
     # Makes sure each Seifert surface is connected
-    def colors_connected(self):
+    def colors_connected(self) -> None:
         vert = self.vert
 
         while(len(vert) != 1):
@@ -100,13 +125,56 @@ class SGraph:
                     self.add_edge(v0, v1, -1, v0.col)
             vert = vert[1:]
 
+    # Checks if two colors are connected.
+    # The lower color should be the first input.
+    def check_connected(self, col1: int, col2: int) -> bool:
+        connected = False
+        i = 0
+        while((not connected) and (i<len(self.vert))):
+            if(self.vert[i].col == col1):
+                for v2 in self.vert:
+                    if((v2.col == col2) and
+                    (self.vve[(self.vert[i], v2)] != [])):
+                        connected = True
+                        break
+            i+=1
+        return connected
+
     # Makes sure the graph across colors is complete
     def make_complete(self):
         v_col = self.col_first_verts
         for color1 in range(len(v_col)):
             for color2 in range(len(v_col)):
-                if(color1 < color2):
-                    if(self.vve[(v_col[color1], v_col[color2])] == []):
-                        self.add_edge(v_col[color1], v_col[color2], 2, color1)
-                        self.add_edge(v_col[color1], v_col[color2], -2, color1)
+                if((color1 < color2) and
+                    (self.vve[(v_col[color1], v_col[color2])] == []) and
+                (not self.check_connected(color1, color2))):
+                    self.add_edge(v_col[color1], v_col[color2], 2, color1)
+                    self.add_edge(v_col[color1], v_col[color2], -2, color1)
 
+    # Gives a value to a lift (or not) of a vertex.
+    # If not lifted, the value is just its index.
+    # Otherwise add or subtract 0.5 depending on the direction of the lift
+    def value(self, vert: SVertex, lift: int) -> float:
+        assert vert in self.vert, "The vertex " + str(vert) + \
+            " is not in the graph"
+
+        if(lift == 0):
+            return vert.num
+        else:
+            return vert.num + self.col_signs(vert.col)*0.5
+
+    # Finds the rightmost edge between two vertices.
+    def max_edge(self, init: SVertex, term: SVertex) -> SEdge:
+        self.vve[(init, term)][-1]
+
+    def local_graph_hom_basis(self, col: int) -> List:
+        pass
+
+
+# Class for loops in spline graphs.
+@dataclass
+class Loop:
+    edges: List[SEdge]
+
+    def __post_init__(self):
+        assert check_loop(edges), "This list does not form a loop: " + str(edges)
