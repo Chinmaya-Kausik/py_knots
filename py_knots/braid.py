@@ -80,7 +80,7 @@ class Braid:
 
 # Class for coloured braids.
 # Extra data is col_list - a list of colours for each knot.
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class ColBraid(Braid):
     col_list: List[int]
 
@@ -210,26 +210,9 @@ class ColBraid(Braid):
 
         return graph
 
-    # List of the first vertices in each color.
-    @cached_property
-    def col_first_verts(self) -> List[SVertex]:
-        vert = self.vertices
-        tally = list(range(max(self.col_list)+1))
-        col_1st_verts = []
+    
 
-        for v in vert:
-            if(v.col in tally):
-                col_1st_verts.append(v)
-                tally = tally[1:]
 
-        return col_1st_verts
-
-    def colors_connected(self, graph: SGraph) -> SGraph:
-
-        vert = graph.vert
-
-        for color in range(len(graph.col_signs)):
-            pass
 
 
         

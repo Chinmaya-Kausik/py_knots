@@ -59,3 +59,41 @@ class SGraph:
             print("("+ str(self.vert.index(edge.initial))+ ", " +
                 str(self.vert.index(edge.terminal)) + ", " +
                 str(edge.typ) + "), ", end='')
+
+    # List of the first vertices in each color.
+    @cached_property
+    def col_first_verts(self) -> List[SVertex]:
+        vert = self.vert
+        tally = list(range(max(self.col_list)+1))
+        col_1st_verts = []
+
+        for v in vert:
+            if(v.col in tally):
+                col_1st_verts.append(v)
+                tally = tally[1:]
+
+        return col_1st_verts
+
+    # Makes sure each Seifert surface is connected
+    def colors_connected(self):
+        vert = self.vert
+
+        while(len(vert) != 1):
+            v0 = vert[0]
+            v1 = vert[1]
+            if(v0.col == v1.col):
+                if(vve[(v0, v1)] == []):
+                    self.add_edge(v0, v1, 1, v0.col)
+                    self.add_edge(v0, v1, -1, v0.col)
+            vert = vert[1:]
+
+    # Makes sure the graph across colors is complete
+    def make_complete(self):
+        v_col = self.col_first_verts
+        for color1 in range(len(v_col)):
+            for color2 in range(len(v_col)):
+                if(color1 < color2):
+                    if(self.vve[(v_col[color1], v_col[color2])] == []):
+                        graph.add_edge(v_col[color1], v_col[color2], 2, color1)
+                        graph.add_edge(v_col[color1], v_col[color2], -2, color1)
+    
