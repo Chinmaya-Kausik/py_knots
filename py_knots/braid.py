@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from sgraph import *
 from functools import cached_property
 
+"""
+----- Generates the spline graph for a braid. 
+----- Generalized Seifert matrices are computed in sgraph.py. 
+"""
+
 
 # Custom slicing
 def slice(list1, a, b):
@@ -27,6 +32,7 @@ def transpose(n: int, lst: List) -> List:
 
 
 # Class for braids. Methods related to its permutation.
+# For generating spline graphs, we use ColBraid
 @dataclass(frozen=True)
 class Braid:
     braid: List[int]
@@ -78,7 +84,7 @@ class Braid:
         return len(self.cycle_decomp)
 
 
-# Class for coloured braids.
+# Class for coloured braids. Generates spline graphs.
 # Extra data is col_list - a list of colours for each knot.
 @dataclass(frozen=True)
 class ColBraid(Braid):
@@ -120,9 +126,10 @@ class ColBraid(Braid):
 
         flat_cyc_by_color = []
         for color in self.cyc_by_color:
+            tally = []
             for cyc in color:
-                for vert_ind in cyc:
-                    flat_cyc_by_color.append(vert_ind)
+                tally += cyc 
+            flat_cyc_by_color += sorted(tally)
 
         for vert_ind in range(self.strands):
             vert_perm[flat_cyc_by_color[vert_ind]-1] = vertices[vert_ind]
@@ -176,7 +183,7 @@ class ColBraid(Braid):
             # Half-twist if the current transposition is within the same colour
             if(upper.col == lower.col):
                 braid1 = braid1[1:]
-                graph.add_edge(upper, lower, sgn, upper.col)
+                graph.add_edge(vert_perm[i-1], vert_perm[i], sgn, upper.col)
 
             # Move on if the lower strand just pulls down to a lower colour
             elif(lower.col < upper.col):
