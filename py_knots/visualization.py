@@ -7,10 +7,10 @@ import sys
 
 # Visualizes a braid
 def visualize_braid(p: ColBraid) -> fig.Figure:
-    fig = plt.figure(figsize=(12, 6), dpi=100)
-    x_scale = 1/(float(2*len(p.braid)+2))
+    fig = plt.figure(figsize=(20, 6), dpi=100)
+    x_scale = 1/(float(2*len(p.braid)+4))
     y_scale = 1/(float(p.strands))
-    colors = ["b", "g", "r", "c", "m", "y", "k", "w"]
+    colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
     vert = p.init_vert_perm
 
     # Adds a horizontal line
@@ -44,11 +44,12 @@ def visualize_braid(p: ColBraid) -> fig.Figure:
     
     for i in range(p.strands):
         add_text(0.5, i+0.5,
-            str(i+1), 20, colors[vert[i].col])
+            "Strand "+str(i+1) + ", Color " +
+            str(vert[i].col), 20, colors[vert[i].col])
 
     # Traverses the braid, adding twists
-    for j in range(1, len(p.braid)+1):
-        k = p.braid[j-1]
+    for j in range(2, len(p.braid)+2):
+        k = p.braid[j-2]
         j = j-0.5
         for i in range(p.strands):
             if((abs(k)-1 != i) and (abs(k) != i)):  # Straight line
@@ -74,7 +75,7 @@ def visualize_braid(p: ColBraid) -> fig.Figure:
 
     # Adds terminal horizontal lines
     for i in range(p.strands):
-        horizontal_line(2*len(p.braid)+1, 2*len(p.braid)+2, i+0.5,
+        horizontal_line(2*len(p.braid)+3, 2*len(p.braid)+4, i+0.5,
             colors[vert[i].col])
 
     return fig
@@ -82,10 +83,10 @@ def visualize_braid(p: ColBraid) -> fig.Figure:
 
 # Visualizes a clasp complex, given its spline graph
 def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
-    fig = plt.figure(figsize=(12, 6), dpi=100)
-    x_scale = 1/(float(2*len(graph.edges)+2))
+    fig = plt.figure(figsize=(20, 6), dpi=100)
+    x_scale = 1/(float(2*len(graph.edges)+3))
     y_scale = 1/(float(len(graph.vert)+0.5))
-    colors = ["b", "g", "r", "c", "m", "y", "k", "w"]
+    colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
     vert = graph.vert
 
     # Adds a horizontal line
@@ -140,13 +141,13 @@ def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
     
     for i in range(len(vert)):
         add_text(0.5, i+0.5,
-            str(vert[i].col), 20, colors[vert[i].col])
+            "Color "+str(vert[i].col), 20, colors[vert[i].col])
 
     # Traverses the graph's edges, adding clasps and twists
     for j in range(1, len(graph.edges)+1):
         edge = graph.edges[j-1]
         k = edge.terminal.num
-        j = j-0.5
+        j = j
         for i in range(len(vert)):
             horizontal_line(2*j, 2*j+1.0/3.0, i+0.5, colors[vert[i].col])
             horizontal_line(2*j+2-1.0/3.0, 2*j+2, i+0.5, colors[vert[i].col])
@@ -199,7 +200,7 @@ def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
 
     # Adds terminal horizontal lines
     for i in range(len(vert)):
-        horizontal_line(2*len(graph.edges)+1, 2*len(graph.edges)+2, i+0.5,
+        horizontal_line(2*len(graph.edges)+2, 2*len(graph.edges)+3, i+0.5,
             colors[vert[i].col])
 
     return fig

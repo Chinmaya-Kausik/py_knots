@@ -67,7 +67,7 @@ class Clasper(tk.Frame):
 
         # Setting up the entry for strands
         ttk.Label(
-            self, text='Strands (BFD):',
+            self, text='Number of Strands (BFD):',
             font=(font_style, font_size)).grid(column=0, row=2, pady=10)
         self.strand_str = tk.StringVar()
         ttk.Entry(self, textvariable=self.strand_str,
@@ -433,7 +433,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Clasper")
 
-    window_width = 2000
+    window_width = 2400
     window_height = 2400
 
     # Get the screen dimension
