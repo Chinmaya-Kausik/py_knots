@@ -21,6 +21,8 @@ class PolyMatrix:
     variables: List[Symbol]
     M: Matrix
 
+    # Bareiss algorithm for the determinant
+    # Standard implementation
     @cached_property
     def bareiss_det(self) -> Add:
 
@@ -29,7 +31,7 @@ class PolyMatrix:
         n = shape(M)[0]
 
         for k in range(n-1):
-
+            # Get non-zero pivots
             if(M[k, k] == 0):
                 singular = True
                 for j in range(k+1, n):
@@ -39,6 +41,7 @@ class PolyMatrix:
                 if(singular):
                     return symbols("0")
 
+            # Update matrix
             for i in range(k+1, n):
                 for j in range(k+1, n):
                     f = M[i, j]*M[k, k] - M[i, k]*M[k, j]
@@ -56,6 +59,8 @@ class PolyMatrix:
         det = M[n-1, n-1]
         return det
 
+    # The Alexander polynomial without t_i's
+    # Can have extra (t_i-1)'s'
     @cached_property
     def stripped_multivar_alexander_poly(self) -> Add:
         f = copy.deepcopy(self.bareiss_det)
@@ -70,6 +75,7 @@ class PolyMatrix:
         f = f.as_expr()
         return f
 
+    # The Conway potential function
     def conway_potential_function(self, graph: SGraph) -> Add:
         M = copy.deepcopy(self.M)
         variables = copy.deepcopy(self.variables)
@@ -87,12 +93,17 @@ class PolyMatrix:
         cpf = (cancel(f)*graph.clasp_sign).as_expr()
         return cpf
 
+    # The multivariate Alexander polynomial
     def multivar_alexander_poly(self, graph: SGraph):
         cpf = self.conway_potential_function(graph)
+        if(graph.colors==1):
+            cancel(cpf*symbols("t0**2-1"))
+        cpf, denom = fraction(cpf)
         for var in self.variables:
-            cpf = cpf.subs(var, var**(1/2))
+            cpf = cpf.subs(var**2, var)
         return cpf
 
+    # Computes the signature at a tuple of length 1 complex numbers
     def signature(self, omega: List[complex]) -> int:
         mult = 1 
         for c in omega:
@@ -118,10 +129,12 @@ def presentation_matrix(graph: SGraph) -> PolyMatrix:
     pres = zeros(len(graph.hom_basis))
     variables = []
 
+    # Initialize variables
     for j in range(graph.colors):
         exec("""t{} = symbols("t{}")""".format(j, j))
         exec("variables.append(t{})".format(j), None, locals())
 
+    # Add the generalized Seifert matrix for each sign tuple.
     for i in range(2**graph.colors):
         col_lifts = [1]*graph.colors
         mult = 1

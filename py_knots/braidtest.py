@@ -8,18 +8,18 @@ from col_perm import *
 p = ColBraid([2, 3, -2, 3, 1, 2, 3], 4, [0, 1, 2])
 
 
-braid = "{4, {2, -3, 2, -1, 2, -3, 2, 3, 3, 1}}"
+braid = "{2, {1, 1, 1, 1}}"
 p = link_info(braid)
 print(p.cycle_decomp, p.braid, p.strands)
 
 
-"""col_list = [0]*p.ct_knots
-col_signs = [1]"""
+col_list = [0]*p.ct_knots
+col_signs = [1]
 
-col_list = list(range(p.ct_knots))
+"""col_list = list(range(p.ct_knots))
 print(col_list)
 col_signs = [1]*(p.ct_knots)
-print(col_signs)
+print(col_signs)"""
 
 p = link_info_col(braid, col_list)
 p, col_signs = find_min_perm(p, col_signs, 50)

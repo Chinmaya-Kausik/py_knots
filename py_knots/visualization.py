@@ -1,11 +1,12 @@
 from braid import *
 from matplotlib import pyplot as plt
 from matplotlib import lines as lines
+from matplotlib import figure as fig
 import sys
 
 
 # Visualizes a braid
-def visualize_braid(p: ColBraid) -> None:
+def visualize_braid(p: ColBraid) -> fig.Figure:
     fig = plt.figure(figsize=(8, 6), dpi=100)
     x_scale = 1/(float(2*len(p.braid)+1))
     y_scale = 1/(float(p.strands+1))
@@ -37,6 +38,7 @@ def visualize_braid(p: ColBraid) -> None:
             [(y_1 + dy/3.0)*y_scale, (y_1)*y_scale],
             color=col2))
 
+    # Traverses the braid, adding twists
     for j in range(len(p.braid)):
         k = p.braid[j]
         for i in range(p.strands):
@@ -61,15 +63,16 @@ def visualize_braid(p: ColBraid) -> None:
             
         vert = transpose(abs(k)-1, vert)
 
+    # Adds terminal horizontal lines
     for i in range(p.strands):
         horizontal_line(2*len(p.braid), 2*len(p.braid)+1, i+0.5,
             colors[vert[i].col])
 
-    fig.savefig("C:/Users/chinm/Downloads/test")
+    return fig
 
 
 # Visualizes a clasp complex, given its spline graph
-def visualize_clasp_complex(graph: SGraph) -> None:
+def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
     fig = plt.figure(figsize=(8, 6), dpi=100)
     x_scale = 1/(float(2*len(graph.edges)+1))
     y_scale = 1/(float(len(graph.vert)+1))
@@ -83,6 +86,7 @@ def visualize_clasp_complex(graph: SGraph) -> None:
             [(y)*y_scale, (y)*y_scale],
             color=col))
 
+    # Adds a twist
     def twist(x_1: float, x_2: float, y_1: float, y_2: float,
             col1: str, col2: str):
         dy = y_2 - y_1
@@ -100,12 +104,14 @@ def visualize_clasp_complex(graph: SGraph) -> None:
             [(y_1 + dy/3.0)*y_scale, (y_1)*y_scale],
             color=col2))
 
+    # Adds a vertical line
     def vertical_line(x: float, y_1: float, y_2: float, col: str):
         fig.add_artist(lines.Line2D(
             [(x)*x_scale, (x)*x_scale],
             [(y_1)*y_scale, (y_2)*y_scale],
             color=col))
 
+    # Adds a cap to the clasp
     def cap(x_1: float, x_2: float, y_1: float, col: str):
         x_mid = (x_1+x_2)/2.0
         fig.add_artist(lines.Line2D(
@@ -119,6 +125,7 @@ def visualize_clasp_complex(graph: SGraph) -> None:
         vertical_line(x_1, y_1+1.0/6.0, y_1+1.0/3.0, col)
         vertical_line(x_2, y_1+1.0/6.0, y_1+1.0/3.0, col)
     
+    # Traverses the graph's edges, adding clasps and twists
     for j in range(len(graph.edges)):
         edge = graph.edges[j]
         k = edge.terminal.num
@@ -172,11 +179,12 @@ def visualize_clasp_complex(graph: SGraph) -> None:
                     colors[edge.col])
                 horizontal_line(2*j, 2*j+1, k+0.5, colors[vert[k].col])
 
+    # Adds terminal horizontal lines
     for i in range(len(graph.vert)):
         horizontal_line(2*len(graph.edges), 2*len(graph.edges)+1, i+0.5,
             colors[vert[i].col])
 
-    fig.savefig("C:/Users/chinm/Downloads/test1")
+    return fig
     
                 
-
+print(1)
