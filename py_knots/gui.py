@@ -32,6 +32,20 @@ class Clasper(tk.Frame):
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
 
+        # Configure messages for defaults
+        self.default_strands = tk.Frame(self)
+        self.default_strands.grid(
+            column=0, row=4, pady=10, sticky='W')
+        self.default_colours = tk.Frame(self)
+        self.default_colours.grid(
+            column=1, row=4, pady=10, sticky='W')
+        self.default_orient = tk.Frame(self)
+        self.default_orient.grid(
+            column=2, row=4, pady=10, sticky='W')
+        self.default_signature = tk.Frame(self)
+        self.default_signature.grid(
+            column=3, row=4, pady=10, sticky='W')
+
         """----- Implementing the GUI ---- """
 
         # Instructions for entering braids
@@ -118,6 +132,11 @@ class Clasper(tk.Frame):
 
     # Processing Link Info style inputs
     def link_info(self, braid: str) -> Braid:
+        self.default_strands.destroy()
+        self.default_strands = tk.Frame(self)
+        self.default_strands.grid(
+            column=0, row=4, pady=10)
+
         Message = ""
         try:
             start = braid.index('{')+1
@@ -131,13 +150,18 @@ class Clasper(tk.Frame):
             braid1 = []
             strands = 0
 
-        ttk.Label(self, text=str(Message), font=(font_style, font_size)).grid(
-            column=0, row=4, pady=10)
+        ttk.Label(self.default_strands, text=str(Message),
+            font=(font_style, font_size)).pack()
 
         return Braid(braid1, strands)
 
     # Processing comma separated inputs
     def csv_input(self, braid: str, strands: str) -> Braid:
+        self.default_strands.destroy()
+        self.default_strands = tk.Frame(self)
+        self.default_strands.grid(
+            column=0, row=4, pady=10)
+
         Message = ""
         try:
             braid1 = [int(x) for x in braid.strip().split(" ")]
@@ -152,13 +176,18 @@ class Clasper(tk.Frame):
             Message += "Using default strands. "
             strands = max(list(map(lambda x: abs(x), braid1)))+1
 
-        ttk.Label(self, text=str(Message), font=(font_style, font_size)).grid(
-            column=0, row=4, pady=10)
+        ttk.Label(self.default_strands, text=str(Message),
+            font=(font_style, font_size)).pack()
 
         return Braid(braid1, strands)
 
     # Processing space separated inputs
     def space_input(self, braid: str, strands: str) -> Braid:
+        self.default_strands.destroy()
+        self.default_strands = tk.Frame(self)
+        self.default_strands.grid(
+            column=0, row=4, pady=10)
+
         Message = ""
         try:
             braid1 = [int(x) for x in braid.strip().split(" ")]
@@ -173,8 +202,8 @@ class Clasper(tk.Frame):
             Message += "Using default strands. "
             strands = max(list(map(lambda x: abs(x), braid1)))+1
         
-        ttk.Label(self, text=str(Message), font=(font_style, font_size)).grid(
-            column=0, row=4, pady=10)
+        ttk.Label(self.default_strands, text=str(Message),
+            font=(font_style, font_size)).pack()
 
         return Braid(braid1, strands)
 
@@ -200,6 +229,16 @@ class Clasper(tk.Frame):
 
     # Command for getting the coloured braid
     def get_col_braid(self) -> ColBraid:
+        self.default_colours.destroy()
+        self.default_orient.destroy()
+
+        self.default_colours = tk.Frame(self)
+        self.default_colours.grid(
+            column=1, row=4, pady=10, sticky='W')
+
+        self.default_orient = tk.Frame(self)
+        self.default_orient.grid(
+            column=2, row=4, pady=10, sticky='W')
 
         p = self.compute_cyc()
         col_list = self.colour_list.get()
@@ -208,27 +247,8 @@ class Clasper(tk.Frame):
         try:
             col_list = [int(x) for x in col_list.split(" ")]
         except ValueError:
-            ttk.Label(self, text="Default colors.",
-                font=(font_style, font_size)).grid(
-                column=1, row=4, pady=10, sticky='W')
-            col_list = list(range(p.ct_knots))
-
-        p = ColBraid(p.braid, p.strands, col_list)
-        return p
-
-    # Command for generating the spline graph;
-    def get_graph(self) -> SGraph:
-
-        p = self.compute_cyc()
-        col_list = self.colour_list.get()
-        col_signs = self.colour_signs.get()
-
-        try:
-            col_list = [int(x) for x in col_list.split(" ")]
-        except ValueError:
-            ttk.Label(self, text="Default colors.",
-                font=(font_style, font_size)).grid(
-                column=1, row=4, pady=10, sticky='W')
+            ttk.Label(self.default_colours, text="Default colors.",
+                font=(font_style, font_size)).pack()
             col_list = list(range(p.ct_knots))
 
         p = ColBraid(p.braid, p.strands, col_list)
@@ -236,9 +256,45 @@ class Clasper(tk.Frame):
         try:
             col_signs = [int(x) for x in col_signs.split(" ")]
         except ValueError:
-            ttk.Label(self, text="Default orientations.",
-                font=(font_style, font_size)).grid(
-                column=2, row=4, pady=10, sticky='W')
+            ttk.Label(self.default_orient, text="Default orientations.",
+                font=(font_style, font_size)).pack()
+            col_signs = [1]*(p.ct_knots)
+
+        p, col_signs = find_min_perm(p, col_signs, 50)
+
+        return p
+
+    # Command for generating the spline graph;
+    def get_graph(self) -> SGraph:
+        self.default_colours.destroy()
+        self.default_orient.destroy()
+
+        self.default_colours = tk.Frame(self)
+        self.default_colours.grid(
+            column=1, row=4, pady=10, sticky='W')
+
+        self.default_orient = tk.Frame(self)
+        self.default_orient.grid(
+            column=2, row=4, pady=10, sticky='W')
+
+        p = self.compute_cyc()
+        col_list = self.colour_list.get()
+        col_signs = self.colour_signs.get()
+
+        try:
+            col_list = [int(x) for x in col_list.split(" ")]
+        except ValueError:
+            ttk.Label(self.default_colours, text="Default colors.",
+                font=(font_style, font_size)).pack()
+            col_list = list(range(p.ct_knots))
+
+        p = ColBraid(p.braid, p.strands, col_list)
+
+        try:
+            col_signs = [int(x) for x in col_signs.split(" ")]
+        except ValueError:
+            ttk.Label(self.default_orient, text="Default orientations.",
+                font=(font_style, font_size)).pack()
             col_signs = [1]*(p.ct_knots)
 
         p, col_signs = find_min_perm(p, col_signs, 50)
@@ -278,14 +334,17 @@ class Clasper(tk.Frame):
         # placing the canvas on the Tkinter window
         canvas.get_tk_widget().grid(column=0, row=13, columnspan=4)
 
-
-
 # Class for invariants
 class Inv(tk.Frame):
 
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
+
+        parent.default_signature.destroy()
+        parent.default_signature = tk.Frame(parent)
+        parent.default_signature.grid(
+            column=3, row=4, pady=10, sticky='W')
 
         # Configure the grid
         self.grid_columnconfigure(0, weight=1)
@@ -304,10 +363,10 @@ class Inv(tk.Frame):
             omega = [complex(cos(2*pi*x), sin(2*pi*x))
                 for x in complex_tuple]
         except ValueError:
-            omega = [complex(-1,0)]*len(graph.col_signs)
-            ttk.Label(parent, text="Default signature inputs.",
-                font=(font_style, font_size)).grid(
-                column=3, row=4, pady=10, sticky='W')
+            omega = [complex(-1, 0)]*len(graph.col_signs)
+            ttk.Label(parent.default_signature,
+                text="Default signature inputs.",
+                font=(font_style, font_size)).pack()
 
         pm = presentation_matrix(graph)
 
