@@ -106,6 +106,16 @@ class Clasper(tk.Frame):
         command=self.get_invariants, style='C.TButton').grid(
             column=0, row=8, pady=10)
 
+        # Button to view the braid
+        ttk.Button(self, text="View Braid",
+        command=self.view_braid, style='C.TButton').grid(
+            column=1, row=8, pady=10)
+
+        # Button to view the C-Complex
+        ttk.Button(self, text="View C-Complex",
+        command=self.view_c_complex, style='C.TButton').grid(
+            column=2, row=8, pady=10)
+
     # Processing Link Info style inputs
     def link_info(self, braid: str) -> Braid:
         Message = ""
@@ -188,9 +198,27 @@ class Clasper(tk.Frame):
 
         return p
 
+    # Command for getting the coloured braid
+    def get_col_braid(self) -> ColBraid:
+
+        p = self.compute_cyc()
+        col_list = self.colour_list.get()
+        col_signs = self.colour_signs.get()
+
+        try:
+            col_list = [int(x) for x in col_list.split(" ")]
+        except ValueError:
+            ttk.Label(self, text="Default colors.",
+                font=(font_style, font_size)).grid(
+                column=1, row=4, pady=10, sticky='W')
+            col_list = list(range(p.ct_knots))
+
+        p = ColBraid(p.braid, p.strands, col_list)
+        return p
+
     # Command for generating the spline graph;
     def get_graph(self) -> SGraph:
-        
+
         p = self.compute_cyc()
         col_list = self.colour_list.get()
         col_signs = self.colour_signs.get()
@@ -224,6 +252,32 @@ class Clasper(tk.Frame):
         self.invariant_frame = Inv(self)
         self.invariant_frame.grid(column=0, row=9,
             columnspan=4, rowspan=3, sticky='W')
+
+    # Command to view the braid
+    def view_braid(self):
+        fig = visualize_braid(self.get_col_braid())
+
+        # creating the Tkinter canvas
+        # containing the Matplotlib figure
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.draw()
+      
+        # placing the canvas on the Tkinter window
+        canvas.get_tk_widget().grid(column=0, row=12, columnspan=4)
+
+    # Command to view the C-Complex
+    def view_c_complex(self):
+
+        fig = visualize_clasp_complex(self.get_graph())
+
+        # creating the Tkinter canvas
+        # containing the Matplotlib figure
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.draw()
+      
+        # placing the canvas on the Tkinter window
+        canvas.get_tk_widget().grid(column=0, row=13, columnspan=4)
+
 
 
 # Class for invariants
@@ -281,7 +335,6 @@ class Inv(tk.Frame):
             font=(font_style, 30)).grid(
             column=1, row=2, pady=15, sticky='W')
 
-
     # Renders latex as a label and places it on the grid
     def make_latex_label(self, latex_string: str, column: int,
             row: int, y_pad: int, sticky: str, columnspan: int, rowspan: int,
@@ -321,8 +374,8 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Clasper")
 
-    window_width = 1600
-    window_height = 1200
+    window_width = 2000
+    window_height = 2400
 
     # Get the screen dimension
     screen_width = root.winfo_screenwidth()
@@ -333,7 +386,7 @@ if __name__ == "__main__":
     center_y = int(screen_height/2)
 
     # Set the position of the window to the center of the screen
-    root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+    root.geometry(f'{window_width}x{window_height}+{center_x}+{0}')
 
     clasper = Clasper(root)
     clasper.pack(side="top", fill="both", expand=True)

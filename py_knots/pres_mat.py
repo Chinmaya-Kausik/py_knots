@@ -77,9 +77,12 @@ class PolyMatrix:
 
     # The Conway potential function
     def conway_potential_function(self, graph: SGraph) -> Add:
+        print("Started computing")
         M = copy.deepcopy(self.M)
         variables = copy.deepcopy(self.variables)
+        print("Ready to compute")
         f = PolyMatrix(variables, -M).bareiss_det
+        print("Got here")
 
         for var in variables:
             f = f.subs(var, var**(-2))
@@ -149,12 +152,11 @@ def presentation_matrix(graph: SGraph) -> PolyMatrix:
                 tally = (tally-1)/2
 
         sign = prod(col_lifts)
-        print(mult, col_lifts, sign)
 
         M = Matrix(graph.gen_seifert_matrix(col_lifts))
-        print(M)
         pres = pres + M*sign*mult
 
+    print("Made the matrix")
     return PolyMatrix(variables, pres)
 
 

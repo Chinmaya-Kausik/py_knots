@@ -17,6 +17,7 @@ def find_min_perm(p: ColBraid, col_signs: List[int],
 
     for i in range(tries):
         perm = random.permutation(col)
+        print(perm)
         new_col_list = [perm[i] for i in col_list]
         new_col_signs = [col_signs[i] for i in perm]
 
