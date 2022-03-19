@@ -3,28 +3,12 @@ from sgraph import *
 from pres_mat import *
 from visualization import *
 from col_perm import *
+from casson_gordon import *
 
 p = ColBraid([2, 3, -2, 3, 1, 2, 3], 4, [0, 1, 2])
 
+p = ColBraid([1, 1], 2, [0, 1])
 
-def link_info(braid: str) -> Braid:
-        Message = ""
-        try:
-            start = braid.index('{')+1
-            strands = int(braid[start])
-            new_braid = braid[start:]
-            braid1 = new_braid[
-                new_braid.index('{')+1: new_braid.index('}')].split(',')
-            braid1 = list(map(lambda x: int(x), braid1))
-        except ValueError:
-            Message += "Invalid Link Info input. "
-            braid1 = []
-            strands = 0
-
-        return Braid(braid1, strands)
-
-braid = "{5, {-1, -2, -2, -1, -3, -4, 3, -2, -2, 3, 4, -3}}"
-p = link_info(braid)
 print(p.cycle_decomp, p.braid, p.strands)
 
 """
@@ -32,14 +16,35 @@ col_list = [0]*p.ct_knots
 col_signs = [1]
 """
 col_list = list(range(p.ct_knots))
-print(col_list)
+print("Color list:", col_list)
 col_signs = [1]*(p.ct_knots)
-print(col_signs)
+print("Color signs: ", col_signs)
+print(" ")
 
 p = ColBraid(p.braid, p.strands, col_list)
 p, col_signs = find_min_perm(p, col_signs, 500)
 graph = p.make_graph(col_signs)
+
+verti, edges_col, edge_dict = graph.find_col_graph()
+print("Graph = ", verti, edges_col, edge_dict)
+print("MST = ", find_mst(verti, edges_col, edge_dict))
 visualize_braid(p)
+
+graph.print_data()
+framing = [-4, 2]
+q=5
+char_list =[4, 2]
+
+pm = presentation_matrix(graph)
+print("Variables", pm.variables)
+
+print(casson_gordon(framing, q, char_list, p))
+s = symbols("s")
+k = symbols("k")
+cg_var, cg_sym = casson_gordon_symbolic(framing, p)
+print(cg_sym.subs(cg_var[0], 2*s).subs(cg_var[1], s))
+print(graph.linking_matrix([0, 0]))
+
 
 """
 print("Braid", p.braid)
@@ -62,7 +67,7 @@ loop2 = graph.hom_basis[1]
 print(graph.linking_number(loop1, loop2, [-1]))
 """
 
-print(len(graph.hom_basis))
+
 """
 
 visualize_clasp_complex(graph)

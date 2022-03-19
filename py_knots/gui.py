@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from matplotlib.pyplot import close
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
 NavigationToolbar2Tk)
@@ -7,7 +8,7 @@ from matplotlib.mathtext import math_to_image
 from io import BytesIO
 from PIL import ImageTk, Image
 from sympy import latex
-
+from math import pi, cos, sin
 from sgraph import *
 from braid import *
 from col_perm import *
@@ -20,6 +21,7 @@ font_style = "Calibri"
 font_size = 25
 
 
+# Class for main window
 class Clasper(tk.Frame):
 
     def __init__(self, parent):
@@ -31,308 +33,239 @@ class Clasper(tk.Frame):
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
+        self.grid_columnconfigure(4, weight=1)
 
-        # Configure messages for defaults
-        self.default_strands = tk.Frame(self)
-        self.default_strands.grid(
-            column=0, row=4, pady=10, sticky='W')
-        self.default_colours = tk.Frame(self)
-        self.default_colours.grid(
-            column=1, row=4, pady=10, sticky='W')
-        self.default_orient = tk.Frame(self)
-        self.default_orient.grid(
-            column=2, row=4, pady=10, sticky='W')
-        self.default_signature = tk.Frame(self)
-        self.default_signature.grid(
-            column=3, row=4, pady=10, sticky='W')
+        # Configure variables
+        self.braid_str = tk.StringVar()
+        self.complete_graph = tk.IntVar(value=0)
 
-        """----- Implementing the GUI ---- """
+        # Configure frames for checking the braid
+        self.braid_check = tk.Frame(self)
 
-        # Instructions for entering braids
+        # Configure frames for everything
+        self.strands = Strands(self)
+        self.strands.grid(
+            column=0, row=4, pady=10, rowspan=6, sticky='N')
+        self.color = Color(self)
+        self.color.grid(
+            column=1, row=4, pady=10, rowspan=6, sticky='N')
+        self.signature = Signature(self)
+        self.signature.grid(
+            column=2, row=4, pady=10, rowspan=6, sticky='N')
+        self.casson_gordon = tk.Frame(self)
+        self.casson_gordon.grid(
+            column=2, row=4, pady=10, rowspan=6, sticky='N')
+
+        self.braid_visual = tk.Frame(self)
+        self.braid_visual.grid(
+            column=0, row=14, pady=10, columnspan=4, sticky='N')
+        self.ccomplex_visual = tk.Frame(self)
+        self.ccomplex_visual.grid(
+            column=0, row=15, pady=10, columnspan=4, sticky='N')
+
+        """
+
+
+        ----- Implementing the GUI ----
+
+
+        
+        """
+
+        # (0, 0) Instructions for entering braids
         ttk.Label(
-            self, text='''Braids - LinkInfo or comma/space separated.'''+
-            '''\nColours and signature inputs - space separated.'''
-            '''\nBFD = leave blank for default''',
-            font=(font_style, font_size), background='yellow').grid(
+            self, text='''Braids - LinkInfo format or comma/space '''+
+            '''separated.\nColors and signature inputs - space separated.''',
+            font=(font_style, font_size), background='cyan').grid(
             column=0, row=0, columnspan=4)
 
-        # Setting up the entry for the braid
+        # (0, 0->1) Setting up the entry for the braid
         ttk.Label(
             self, text='Braid:', font=(font_style, font_size)).grid(
             column=0, row=1, pady=10)
-        self.braid_str = tk.StringVar()
         ttk.Entry(self, textvariable=self.braid_str,
             font=(font_style, font_size), width=40).grid(column=1, row=1,
-            padx=0, pady=10, sticky='W', columnspan=3)
+            padx=0, pady=10, sticky='W', columnspan=2)
 
-        # Setting up the entry for strands
+
+        # (1, 2) Examples for braid entries
         ttk.Label(
-            self, text='Number of Strands (BFD):',
-            font=(font_style, font_size)).grid(column=0, row=2, pady=10)
-        self.strand_str = tk.StringVar()
-        ttk.Entry(self, textvariable=self.strand_str,
-            font=(font_style, font_size)).grid(
-            column=1, row=2, padx=0, pady=10, sticky='W', columnspan=3)
+            self, text="""Example: '2 3 -2 3 1 2 3'"""+
+            """ or '2, 3, -2, 3, 1, 2, 3' or """+
+            """'{4, {2, 3, -2, 3, 1, 2, 3}}'""",
+            font=(font_style, font_size), background='cyan').grid(
+            column=1, row=2, pady=10, sticky='W')
 
         # Creating a style object
         style = ttk.Style()
-         
+
         # Adding style for buttons
         style.configure('C.TButton', font=('calibri', font_size),
             background='blue')
 
+        # Adding style for radiobuttons
+        style.configure('C.TRadiobutton', font=('calibri', font_size))
+
+        # Adding style for checkbuttons
+        style.configure('C.TCheckbutton', font=('calibri', font_size))
+
+        ttk.Checkbutton(self, text="All Seifert surfaces intersecting",
+            style='C.TCheckbutton',
+            variable=self.complete_graph).grid(column=2, row=1,
+            padx=0, pady=10, sticky='W')
+        
         # Setup for printing the cycle decomposition
         ttk.Button(self, text="Cycle Decomposition", command=self.compute_cyc,
             style='C.TButton').grid(column=0, row=3, pady=10)
 
-        # Set up entry for the colour list
-        ttk.Label(self, text='Colours (start from 0, BFD):',
-            font=(font_style, font_size)).grid(
-            column=0, row=5, pady=10)
-        self.colour_list = tk.StringVar()
-        ttk.Entry(self, textvariable=self.colour_list,
-            font=(font_style, font_size)).grid(
-            column=1, row=5, padx=0, pady=10, sticky='W', columnspan=3)
-
-        # Set up entry for orientations of colours
-        ttk.Label(self, text='Orientations (+1/-1, BFD):',
-            font=(font_style, font_size)).grid(
-            column=0, row=6, pady=10)
-        self.colour_signs = tk.StringVar()
-        ttk.Entry(self, textvariable=self.colour_signs,
-            font=(font_style, font_size)).grid(
-            column=1, row=6, padx=0, pady=10, sticky='W', columnspan=3)
-
-        # Set up entry for complex tuple
-        ttk.Label(self, text='Signature input,'+
-            'space sep\n (1/3 means 2*pi/3, BFD):',
-            font=(font_style, font_size)).grid(
-            column=0, row=7, pady=10)
-        self.cplx_tuple = tk.StringVar()
-        ttk.Entry(self, textvariable=self.cplx_tuple,
-            font=(font_style, font_size)).grid(
-            column=1, row=7, padx=0, pady=10, sticky='W', columnspan=2)
-
         self.invariant_frame = tk.Frame(self)
 
         # Button to compute invariants
-        ttk.Button(self, text="Compute Invariants",
+        ttk.Button(self, text="Compute link invariants",
         command=self.get_invariants, style='C.TButton').grid(
-            column=0, row=8, pady=10)
+            column=0, row=10, pady=10)
 
-        # Button to view the braid
-        ttk.Button(self, text="View Braid",
-        command=self.view_braid, style='C.TButton').grid(
-            column=1, row=8, pady=10)
+        ttk.Button(self, text="Get LaTeX invariants",
+            command=self.get_latex, style='C.TButton').grid(
+            column=1, row=10, pady=10)
 
-        # Button to view the C-Complex
-        ttk.Button(self, text="View C-Complex",
-        command=self.view_c_complex, style='C.TButton').grid(
-            column=2, row=8, pady=10)
+        ttk.Button(self, text="Get Seifert matrices",
+            command=self.get_seifert_matrices, style='C.TButton').grid(
+            column=2, row=10, pady=10)
 
     # Processing Link Info style inputs
     def link_info(self, braid: str) -> Braid:
-        self.default_strands.destroy()
-        self.default_strands = tk.Frame(self)
-        self.default_strands.grid(
-            column=0, row=4, pady=10)
 
-        Message = ""
-        try:
-            start = braid.index('{')+1
-            strands = int(braid[start])
-            new_braid = braid[start:]
-            braid1 = new_braid[
-                new_braid.index('{')+1: new_braid.index('}')].split(',')
-            braid1 = list(map(lambda x: int(x), braid1))
-        except ValueError:
-            Message += "Invalid Link Info input. "
-            braid1 = []
-            strands = 0
-
-        ttk.Label(self.default_strands, text=str(Message),
-            font=(font_style, font_size)).pack()
+        start = braid.index('{')+1
+        strands = int(braid[start])
+        new_braid = braid[start:]
+        braid1 = new_braid[
+            new_braid.index('{')+1: new_braid.index('}')].split(',')
+        braid1 = list(map(lambda x: int(x), braid1))
 
         return Braid(braid1, strands)
 
     # Processing comma separated inputs
-    def csv_input(self, braid: str, strands: str) -> Braid:
-        self.default_strands.destroy()
-        self.default_strands = tk.Frame(self)
-        self.default_strands.grid(
-            column=0, row=4, pady=10)
-
-        Message = ""
-        try:
-            braid1 = [int(x) for x in braid.strip().split(" ")]
-        except ValueError:
-            Message += "Invalid braid input. "
-            braid1 = []
-            strands = 0
-
-        try:
-            strands = int(strands)
-        except ValueError:
-            Message += "Using default strands. "
-            strands = max(list(map(lambda x: abs(x), braid1)))+1
-
-        ttk.Label(self.default_strands, text=str(Message),
-            font=(font_style, font_size)).pack()
-
-        return Braid(braid1, strands)
+    def csv_input(self, braid: str) -> List[int]:
+        braid1 = [int(x) for x in braid.strip().split(" ")]
+        return braid1
 
     # Processing space separated inputs
-    def space_input(self, braid: str, strands: str) -> Braid:
-        self.default_strands.destroy()
-        self.default_strands = tk.Frame(self)
-        self.default_strands.grid(
-            column=0, row=4, pady=10)
-
-        Message = ""
-        try:
-            braid1 = [int(x) for x in braid.strip().split(" ")]
-        except ValueError:
-            Message += "Invalid braid input. "
-            braid1 = []
-            strands = 0
-
-        try:
-            strands = int(strands)
-        except ValueError:
-            Message += "Using default strands. "
-            strands = max(list(map(lambda x: abs(x), braid1)))+1
-        
-        ttk.Label(self.default_strands, text=str(Message),
-            font=(font_style, font_size)).pack()
-
-        return Braid(braid1, strands)
+    def space_input(self, braid: str) -> List[int]:
+        braid1 = [int(x) for x in braid.strip().split(" ")]
+        return braid1
 
     # Command for computing the cycle decomposition and generating the braid
     def compute_cyc(self) -> Braid:
-        # Obtain the braid and strands and process them
-        braid = self.braid_str.get()
-        strands = self.strand_str.get()
-
-        # Try all possible input formats
-        if('{' in braid):
-            p = self.link_info(braid)
-        elif(',' in braid):
-            p = self.csv_input(braid, strands)
-        else:
-            p = self.space_input(braid, strands)
-
-        ttk.Label(self, text=str(p.cycle_decomp),
+        p_braid = self.strands.make_braid()
+        ttk.Label(self, text=str(p_braid.cycle_decomp),
             font=(font_style, font_size)).grid(
             column=1, row=3, pady=10, sticky='W')
 
-        return p
-
-    # Command for getting the coloured braid
-    def get_col_braid(self) -> ColBraid:
-        self.default_colours.destroy()
-        self.default_orient.destroy()
-
-        self.default_colours = tk.Frame(self)
-        self.default_colours.grid(
-            column=1, row=4, pady=10, sticky='W')
-
-        self.default_orient = tk.Frame(self)
-        self.default_orient.grid(
-            column=2, row=4, pady=10, sticky='W')
-
-        p = self.compute_cyc()
-        col_list = self.colour_list.get()
-        col_signs = self.colour_signs.get()
-
+    # Print latex 
+    def get_latex(self):
+        new_window = tk.Toplevel(self)
         try:
-            col_list = [int(x) for x in col_list.split(" ")]
+            graph = self.color.get_graph()
+            pm = presentation_matrix(graph)
+            cpf = tk.Text(new_window, font=(font_style, font_size))
+            cpf.insert(1.0, "Conway Potential Function:\n"+
+                latex(pm.conway_potential_function(graph)))
+            cpf.pack()
+            cpf.configure(state="disabled")
+
+            multi_var_alexander = tk.Text(
+                new_window, font=(font_style, font_size))
+            multi_var_alexander.insert(1.0,
+                "Mutivariable Alexander Polynomial:\n"+
+                latex(pm.conway_potential_function(graph)))
+            multi_var_alexander.pack()
+            multi_var_alexander.configure(state="disabled")
+
+            # if tkinter is 8.5 or above you'll want the selection background
+            # to appear like it does when the widget is activated
+            # comment this out for older versions of Tkinter
+            cpf.configure(inactiveselectbackground=cpf.cget(
+                "selectbackground"))
+            multi_var_alexander.configure(
+                inactiveselectbackground=cpf.cget("selectbackground"))
+            
         except ValueError:
-            ttk.Label(self.default_colours, text="Default colors.",
-                font=(font_style, font_size)).pack()
-            col_list = list(range(p.ct_knots))
+            pass
 
-        p = ColBraid(p.braid, p.strands, col_list)
+    # Save the seifert matrices to a file
+    def get_seifert_matrices(self):
+        file_name = tk.filedialog.asksaveasfilename()
 
-        try:
-            col_signs = [int(x) for x in col_signs.split(" ")]
-        except ValueError:
-            ttk.Label(self.default_orient, text="Default orientations.",
-                font=(font_style, font_size)).pack()
-            col_signs = [1]*(p.ct_knots)
+        self.invariant_frame.destroy()
+        self.invariant_frame = Inv(self)
+        self.invariant_frame.grid(column=0, row=11,
+            columnspan=4, rowspan=3)
 
-        p, col_signs = find_min_perm(p, col_signs, 50)
+        graph = self.invariant_frame.graph
 
-        return p
+        if(file_name):
+            if("." not in file_name):
+                file_name += ".txt"
 
-    # Command for generating the spline graph;
-    def get_graph(self) -> SGraph:
-        self.default_colours.destroy()
-        self.default_orient.destroy()
-
-        self.default_colours = tk.Frame(self)
-        self.default_colours.grid(
-            column=1, row=4, pady=10, sticky='W')
-
-        self.default_orient = tk.Frame(self)
-        self.default_orient.grid(
-            column=2, row=4, pady=10, sticky='W')
-
-        p = self.compute_cyc()
-        col_list = self.colour_list.get()
-        col_signs = self.colour_signs.get()
-
-        try:
-            col_list = [int(x) for x in col_list.split(" ")]
-        except ValueError:
-            ttk.Label(self.default_colours, text="Default colors.",
-                font=(font_style, font_size)).pack()
-            col_list = list(range(p.ct_knots))
-
-        p = ColBraid(p.braid, p.strands, col_list)
-
-        try:
-            col_signs = [int(x) for x in col_signs.split(" ")]
-        except ValueError:
-            ttk.Label(self.default_orient, text="Default orientations.",
-                font=(font_style, font_size)).pack()
-            col_signs = [1]*(p.ct_knots)
-
-        p, col_signs = find_min_perm(p, col_signs, 50)
-        graph = p.make_graph(col_signs)
-        return graph
+            f = open(file_name, 'w+')
+            seif = create_seifert_matrices(graph)
+            f.write(seif)
+            f.close()
 
     # Command for computing and displaying invariants
     def get_invariants(self):
 
         self.invariant_frame.destroy()
         self.invariant_frame = Inv(self)
-        self.invariant_frame.grid(column=0, row=9,
-            columnspan=4, rowspan=3, sticky='W')
+        self.invariant_frame.grid(column=0, row=11,
+            columnspan=4, rowspan=3)
+        self.view_braid()
+        self.view_c_complex()
 
     # Command to view the braid
     def view_braid(self):
-        fig = visualize_braid(self.get_col_braid())
+        try:
+            close(self.braid_fig)
+        except Exception:
+            pass
+        self.braid_visual.destroy()
+        self.braid_visual = tk.Frame(self)
+        self.braid_visual.grid(
+            column=0, row=14, pady=10, columnspan=4)
+
+        self.braid_fig = visualize_braid(self.color.get_col_braid())
 
         # creating the Tkinter canvas
         # containing the Matplotlib figure
-        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas = FigureCanvasTkAgg(self.braid_fig, master=self.braid_visual)
         canvas.draw()
       
         # placing the canvas on the Tkinter window
-        canvas.get_tk_widget().grid(column=0, row=12, columnspan=4)
+        canvas.get_tk_widget().pack()
 
     # Command to view the C-Complex
     def view_c_complex(self):
+        try:
+            close(self.ccomplex_fig)
+        except Exception:
+            pass
+        self.ccomplex_visual.destroy()
+        self.ccomplex_visual = tk.Frame(self)
+        self.ccomplex_visual.grid(
+            column=0, row=15, pady=10, columnspan=4)
 
-        fig = visualize_clasp_complex(self.get_graph())
+        self.ccomplex_fig = visualize_clasp_complex(self.color.get_graph())
 
         # creating the Tkinter canvas
         # containing the Matplotlib figure
-        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas = FigureCanvasTkAgg(self.ccomplex_fig,
+            master=self.ccomplex_visual)
         canvas.draw()
       
         # placing the canvas on the Tkinter window
-        canvas.get_tk_widget().grid(column=0, row=13, columnspan=4)
+        canvas.get_tk_widget().pack()
+
 
 # Class for invariants
 class Inv(tk.Frame):
@@ -341,11 +274,6 @@ class Inv(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
 
-        parent.default_signature.destroy()
-        parent.default_signature = tk.Frame(parent)
-        parent.default_signature.grid(
-            column=3, row=4, pady=10, sticky='W')
-
         # Configure the grid
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -353,20 +281,12 @@ class Inv(tk.Frame):
         self.grid_columnconfigure(3, weight=1)
 
         try:
-            graph = parent.get_graph()
+            graph = parent.color.get_graph()
+            self.graph = graph
         except ValueError:
             pass
 
-        try:
-            complex_tuple = [int(x) for x in 
-                parent.cplx_tuple.get().split(" ")]
-            omega = [complex(cos(2*pi*x), sin(2*pi*x))
-                for x in complex_tuple]
-        except ValueError:
-            omega = [complex(-1, 0)]*len(graph.col_signs)
-            ttk.Label(parent.default_signature,
-                text="Default signature inputs.",
-                font=(font_style, font_size)).pack()
+        omega = parent.signature.get_omega()
 
         pm = presentation_matrix(graph)
 
@@ -429,11 +349,377 @@ class Inv(tk.Frame):
         buffer.flush()
 
 
+# Class for strand inputs
+class Strands(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.parent = parent
+
+        braid = self.parent.braid_str.get()
+
+        # Configure the two columns
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=2)
+
+        # Add title
+        ttk.Label(
+            self, text='''Number of strands''',
+            font=(font_style, font_size), background='yellow').grid(
+            column=0, row=0, columnspan=2)
+
+        # Configure frame for printing defaults
+        self.strand_default = tk.Frame(self)
+        self.strand_check = tk.Frame(self)
+
+        # Configure variables to hold inputs
+        self.strand_choice = tk.IntVar(value=0)
+        self.strand_str = tk.StringVar()
+
+        # Configure and place radio buttons and entries
+        # Default
+        self.use_defaults = ttk.Radiobutton(self, text="Default",
+            variable=self.strand_choice,
+            style='C.TRadiobutton', value=1, command=self.make_braid)
+        self.use_defaults.grid(column=0, row=1, pady=10, sticky='W')
+        # Custom
+        self.use_custom = ttk.Radiobutton(self, text="Custom: ",
+            variable=self.strand_choice,
+            style='C.TRadiobutton', value=2, command=self.make_braid)
+        self.use_custom.grid(column=0, row=2, pady=10, sticky='W')
+        ttk.Entry(self, textvariable=self.strand_str,
+            font=(font_style, font_size)).grid(
+            column=1, row=2, padx=0, pady=10, sticky='W')
+        # Example of a custom entry
+        ttk.Label(self, text="Example: '3'",
+            font=(font_style, font_size), background='cyan').grid(
+            column=1, row=3, pady=10, sticky='W')
+
+    # Make a braid and return error messages
+    def make_braid(self) -> Braid:
+        # Destroy and reinitialize message frames
+        self.parent.braid_check.destroy()
+        self.strand_default.destroy()
+        self.strand_check.destroy()
+        self.strand_check = tk.Frame(self)
+        self.strand_default = tk.Frame(self)
+        self.parent.braid_check = tk.Frame(self.parent)
+
+        self.parent.braid_check.grid(column=0, row=2, pady=10)
+        self.strand_default.grid(column=1, row=1, pady=10, sticky='W')
+        self.strand_check.grid(column=0, row=5, pady=10, columnspan=2)
+
+        strand_check_message = ""
+        braid = self.parent.braid_str.get()
+
+        try:
+            strand_option = self.strand_choice.get()
+            assert strand_option != 0, AssertionError
+
+            if('{' in braid):
+                p = self.parent.link_info(braid)
+            elif(',' in braid):
+                braid1 = self.parent.csv_input(braid)
+            else:
+                braid1 = self.parent.space_input(braid)
+        except AssertionError:
+            strand_check_message += "Specify strands."
+        except ValueError:
+            ttk.Label(self.parent.braid_check, text="Bad braid input",
+                font=(font_style, font_size), background="pink").pack()
+
+        try:
+            if(strand_option == 2):
+                strands = self.strand_str.get()
+                strands = int(strands)
+                p = Braid(braid1, strands)
+            else:
+                if('{' not in braid):
+                    strands = max(list(map(lambda x: abs(x), braid1)))+1
+                    p = Braid(braid1, strands)
+                ttk.Label(self.strand_default, text="= "+ str(p.strands),
+                    font=(font_style, font_size)).pack(anchor='w')
+        except ValueError:
+            strand_check_message += "Bad strand input."
+        except UnboundLocalError:
+            pass
+
+        if(strand_check_message!=""):
+            ttk.Label(self.strand_check, text=strand_check_message,
+                font=(font_style, font_size), background="pink").pack()
+
+        try:
+            return p
+        except Exception:
+            pass
+
+
+# Class for color inputs
+class Color(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.parent = parent
+
+        braid = self.parent.braid_str.get()
+
+        # Configure the two columns
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=2)
+
+        # Add title
+        ttk.Label(
+            self, text='''Colors''',
+            font=(font_style, font_size), background='yellow').grid(
+            column=0, row=0, columnspan=2)
+
+        # Configure frame for printing defaults
+        self.one_color_default = tk.Frame(self)
+        self.multi_color_default = tk.Frame(self)
+        self.color_check = tk.Frame(self)
+
+        # Configure variables to hold inputs
+        self.color_choice = tk.IntVar(value=0)
+        self.color_str = tk.StringVar()
+
+        # Configure and place radio buttons and entries
+        # One color
+        self.use_one_color = ttk.Radiobutton(self, text="One color",
+            variable=self.color_choice,
+            style='C.TRadiobutton', value=1, command=self.get_col_braid)
+        self.use_one_color.grid(column=0, row=1, pady=10, sticky='W')
+        # One per knot
+        self.use_one_per_knot = ttk.Radiobutton(self, text="One per knot",
+            variable=self.color_choice,
+            style='C.TRadiobutton', value=2, command=self.get_col_braid)
+        self.use_one_per_knot.grid(column=0, row=2, pady=10, sticky='W')
+        # Custom
+        self.use_custom = ttk.Radiobutton(self, text="Custom: ",
+            variable=self.color_choice,
+            style='C.TRadiobutton', value=3, command=self.get_col_braid)
+        self.use_custom.grid(column=0, row=3, pady=10, sticky='W')
+        ttk.Entry(self, textvariable=self.color_str,
+            font=(font_style, font_size)).grid(
+            column=1, row=3, padx=0, pady=10, sticky='W')
+        # Example of a custom entry
+        ttk.Label(self, text="Example: '0 0 1' for 3 knots",
+            font=(font_style, font_size), background='cyan').grid(
+            column=1, row=4, pady=10, sticky='W')
+
+    # Make a colored braid and return error messages
+    # Command for getting the coloured braid
+    def get_col_braid(self) -> ColBraid:
+        self.color_check.destroy()
+        self.multi_color_default.destroy()
+        self.one_color_default.destroy()
+        self.color_check = tk.Frame(self)
+        self.multi_color_default = tk.Frame(self)
+        self.one_color_default = tk.Frame(self)
+
+        # Place frames for various defaults and error messages
+        self.color_check.grid(column=0, row=5, pady=10)
+        self.one_color_default.grid(column=1, row=1, pady=10, sticky='W')
+        self.multi_color_default.grid(column=1, row=2, pady=10, sticky='W')
+
+        self.parent.compute_cyc()
+        p = self.parent.strands.make_braid()
+
+        def print_col_list(lst: List[int]):
+            a = ""
+            for i in lst:
+                a += str(i) + " "
+            return a
+
+        try:
+            color_option = self.color_choice.get()
+            assert color_option != 0, AssertionError
+
+            if(color_option == 1):
+                col_list = [0]*p.ct_knots
+                ttk.Label(self.one_color_default,
+                    text="= "+print_col_list(col_list),
+                    font=(font_style, font_size)).pack(anchor='w')
+            elif(color_option == 2):
+                col_list = list(range(p.ct_knots))
+                ttk.Label(self.multi_color_default,
+                    text="= "+print_col_list(col_list),
+                    font=(font_style, font_size)).pack(anchor='w')
+            else:
+                col_list = self.color_str.get()
+                col_list = [int(x) for x in col_list.split(" ")]
+
+            col_signs = [1]*(max(col_list)+1)
+
+            p = ColBraid(p.braid, p.strands, col_list)
+            complete_choice = self.parent.complete_graph.get()
+            if(complete_choice==0):
+                p, col_signs = find_min_perm(p, col_signs, 50)
+            else:
+                p, col_signs = find_min_perm_complete(p, col_signs, 50)
+            return p
+
+        except ValueError:
+            ttk.Label(self.color_check, text="Bad color input",
+                font=(font_style, font_size), background="pink").pack()
+        except AssertionError:
+            ttk.Label(self.color_check, text="Specify colors",
+                font=(font_style, font_size), background="pink").pack()
+
+    # Makes the graph for the colored braid derived from the color inputs
+    def get_graph(self):
+        self.color_check.destroy()
+        self.multi_color_default.destroy()
+        self.one_color_default.destroy()
+        self.color_check = tk.Frame(self)
+        self.multi_color_default = tk.Frame(self)
+        self.one_color_default = tk.Frame(self)
+
+        # Place frames for various defaults and error messages
+        self.color_check.grid(column=0, row=5, pady=10)
+        self.one_color_default.grid(column=1, row=1, pady=10, sticky='W')
+        self.multi_color_default.grid(column=1, row=2, pady=10, sticky='W')
+
+        self.parent.compute_cyc()
+        p = self.parent.strands.make_braid()
+
+        def print_col_list(lst: List[int]):
+            a = ""
+            for i in lst:
+                a += str(i) + " "
+            return a
+
+        try:
+            color_option = self.color_choice.get()
+            assert color_option != 0, AssertionError
+
+            if(color_option == 1):
+                col_list = [0]*p.ct_knots
+                ttk.Label(self.one_color_default,
+                    text="= "+print_col_list(col_list),
+                    font=(font_style, font_size)).pack(anchor='w')
+            elif(color_option == 2):
+                col_list = list(range(p.ct_knots))
+                ttk.Label(self.multi_color_default,
+                    text="= "+print_col_list(col_list),
+                    font=(font_style, font_size)).pack(anchor='w')
+            else:
+                col_list = self.color_str.get()
+                col_list = [int(x) for x in col_list.split(" ")]
+
+            col_signs = [1]*(max(col_list)+1)
+
+            p = ColBraid(p.braid, p.strands, col_list)
+            
+            complete_choice = self.parent.complete_graph.get()
+            if(complete_choice==0):
+                p, col_signs = find_min_perm(p, col_signs, 50)
+                graph = p.make_graph(col_signs)
+            else:
+                p, col_signs = find_min_perm_complete(p, col_signs, 50)
+                graph= p.make_graph_complete(col_signs)
+            return graph
+
+        except ValueError:
+            ttk.Label(self.color_check, text="Bad color input",
+                font=(font_style, font_size), background="pink").pack()
+        except AssertionError:
+            ttk.Label(self.color_check, text="Specify colors",
+                font=(font_style, font_size), background="pink").pack()
+
+
+# Class for signature inputs
+class Signature(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.parent = parent
+
+        braid = self.parent.braid_str.get()
+
+        # Configure the two columns
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=2)
+
+        # Add title
+        ttk.Label(
+            self, text='''Signature inputs''',
+            font=(font_style, font_size), background='yellow').grid(
+            column=0, row=0, columnspan=2)
+
+        # Configure frame for printing defaults
+        self.signature_default = tk.Frame(self)
+        self.signature_check = tk.Frame(self)
+
+        # Configure variables to hold inputs
+        self.signature_choice = tk.IntVar(value=0)
+        self.signature_str = tk.StringVar()
+
+        # Configure and place radio buttons and entries
+        # Default
+        self.use_defaults = ttk.Radiobutton(self, text="Default",
+            variable=self.signature_choice,
+            style='C.TRadiobutton', value=1, command=self.get_omega)
+        self.use_defaults.grid(column=0, row=1, pady=10, sticky='W')
+        # Custom
+        self.use_custom = ttk.Radiobutton(self, text="Custom: ",
+            variable=self.signature_choice,
+            style='C.TRadiobutton', value=2, command=self.get_omega)
+        self.use_custom.grid(column=0, row=2, pady=10, sticky='W')
+        ttk.Entry(self, textvariable=self.signature_str,
+            font=(font_style, font_size)).grid(
+            column=1, row=2, padx=0, pady=10, sticky='W')
+        # Example of a custom entry
+        ttk.Label(self, text="Example: '1/2 1/3' means '(pi, 2*pi/3)'",
+            font=(font_style, font_size), background='cyan').grid(
+            column=1, row=3, pady=10, sticky='W')
+
+    # Get the signature input and return error messages
+    def get_omega(self) -> Braid:
+        # Destroy and reinitialize message frames
+        self.signature_default.destroy()
+        self.signature_check.destroy()
+        self.signature_check = tk.Frame(self)
+        self.signature_default = tk.Frame(self)
+
+        self.signature_default.grid(column=1, row=1, pady=10, sticky='W')
+        self.signature_check.grid(column=0, row=5, pady=10, columnspan=2)
+
+        signature_inputs = self.signature_str.get()
+
+        graph = self.parent.color.get_graph()
+
+        try:
+            signature_option = self.signature_choice.get()
+            assert signature_option != 0, AssertionError
+
+            if(signature_option == 1):
+                omega = [complex(-1, 0)]*graph.colors
+                ttk.Label(self.signature_default, text="= "+ "-1 "*graph.colors,
+                    font=(font_style, font_size)).pack(anchor='w')
+            else:
+                complex_tuple = [int(x) for x in
+                    signature_inputs.split(" ")]
+                omega = [complex(cos(2*pi*x), sin(2*pi*x))
+                    for x in complex_tuple]
+
+        except AssertionError:
+            ttk.Label(self.signature_check, text="Specify signature inputs",
+                    font=(font_style, font_size),
+                    background='pink').pack(anchor='w')
+        except ValueError:
+            ttk.Label(self.signature_check, text="Bad signature inputs",
+                    font=(font_style, font_size),
+                    background='pink').pack(anchor='w')
+
+        try:
+            return omega
+        except Exception:
+            pass
+
+
+# Executing everything
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Clasper")
 
-    window_width = 2400
+    window_width = 2800
     window_height = 2400
 
     # Get the screen dimension
@@ -455,3 +741,43 @@ if __name__ == "__main__":
         windll.shcore.SetProcessDpiAwareness(1)
     finally:
         root.mainloop()
+
+
+# Setting up the entry for strands
+
+        """ttk.Label(
+            self, text='Number of Strands:',
+            font=(font_style, font_size)).grid(column=0, row=2, pady=10)
+        self.strand_str = tk.StringVar()
+        ttk.Entry(self, textvariable=self.strand_str,
+            font=(font_style, font_size)).grid(
+            column=1, row=2, padx=0, pady=10, sticky='W', columnspan=3)"""
+    
+        # Set up entry for the colour list
+        """ttk.Label(self, text='Colours (start from 0, BFD):',
+            font=(font_style, font_size)).grid(
+            column=0, row=5, pady=10)
+        self.colour_list = tk.StringVar()
+        ttk.Entry(self, textvariable=self.colour_list,
+            font=(font_style, font_size)).grid(
+            column=1, row=5, padx=0, pady=10, sticky='W', columnspan=3)"""
+
+        # Set up entry for orientations of colours
+        """ttk.Label(self, text='Orientations (+1/-1, BFD):',
+            font=(font_style, font_size)).grid(
+            column=0, row=6, pady=10)
+        self.colour_signs = tk.StringVar()
+        ttk.Entry(self, textvariable=self.colour_signs,
+            font=(font_style, font_size)).grid(
+            column=1, row=6, padx=0, pady=10, sticky='W', columnspan=3)
+        """
+
+        # Set up entry for complex tuple
+        """ttk.Label(self, text='Signature input,'+
+            'space sep\n (1/3 means 2*pi/3, BFD):',
+            font=(font_style, font_size)).grid(
+            column=0, row=7, pady=10)
+        self.cplx_tuple = tk.StringVar()
+        ttk.Entry(self, textvariable=self.cplx_tuple,
+            font=(font_style, font_size)).grid(
+            column=1, row=7, padx=0, pady=10, sticky='W', columnspan=2)"""

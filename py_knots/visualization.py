@@ -8,7 +8,7 @@ import sys
 # Visualizes a braid
 def visualize_braid(p: ColBraid) -> fig.Figure:
     fig = plt.figure(figsize=(20, 6), dpi=100)
-    x_scale = 1/(float(2*len(p.braid)+4))
+    x_scale = 1/(float(2*len(p.braid)+4.5))
     y_scale = 1/(float(p.strands))
     colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
     vert = p.init_vert_perm
@@ -78,13 +78,14 @@ def visualize_braid(p: ColBraid) -> fig.Figure:
         horizontal_line(2*len(p.braid)+3, 2*len(p.braid)+4, i+0.5,
             colors[vert[i].col])
 
+    add_text(0.5/x_scale, 0.2, "Braid", 20, 'black')
     return fig
 
 
 # Visualizes a clasp complex, given its spline graph
 def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
     fig = plt.figure(figsize=(20, 6), dpi=100)
-    x_scale = 1/(float(2*len(graph.edges)+3))
+    x_scale = 1/(float(2*len(graph.edges)+3.5))
     y_scale = 1/(float(len(graph.vert)+0.5))
     colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
     vert = graph.vert
@@ -202,6 +203,8 @@ def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
     for i in range(len(vert)):
         horizontal_line(2*len(graph.edges)+2, 2*len(graph.edges)+3, i+0.5,
             colors[vert[i].col])
+
+    add_text(0.49/x_scale, 0.2, "C-Complex", 20, 'black')
 
     return fig
     

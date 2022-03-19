@@ -1,13 +1,67 @@
 import math
-from typing import List, Tuple, Callable, Dict
+from typing import List, Tuple, Callable, Dict, Set
 from functools import cached_property
 from dataclasses import dataclass
+from copy import deepcopy
 
 """
 ----- Generates the homology basis for a spline graph and
 ----- computes generalized Seifert matrices. 
 ----- The presentation matrix is computed in pres_mat.py. 
 """
+
+
+# Finds a minimum spanning tree for a graph
+# Returns the set and dictionary describing the edges of the MST
+def find_mst(verti: Set, edges_col: Set, edge_dict: Dict):
+
+    mst_edges = set()
+    mst_vertices = {0}
+    mst_dict = dict()
+
+    vertices_remaining = verti.difference(mst_vertices)
+
+    for v in verti:
+        mst_dict[v] = set()
+
+    explored = [0]
+    queue = [0]
+
+    while(queue):
+        node = queue.pop(0)
+        for v in edge_dict[node]:
+            if(v not in explored):
+                queue.append(v)
+                explored.append(v)
+                if(node>v):
+                    mst_edges.add((v, node))
+                else:
+                    mst_edges.add((node, v))
+                mst_dict[v].add(node)
+                mst_dict[node].add(v)
+
+    return mst_edges, mst_dict
+
+
+# Finds the shortest path from the vertex init to the vertex term
+# Using a breadth first search
+def find_path(verti: Set, edges_col: Set, edge_dict: Dict,
+        init: int, term: int) -> List[int]:
+
+    explored = [init]
+    queue = [[init]]
+
+    while(queue):
+        path = queue.pop(0)
+        node = path[-1]
+        for v in edge_dict[node]:
+            if(v not in explored):
+                if(v == term):
+                    return path+[v]
+                else:
+                    queue.append(path +[v])
+                explored.append(v)
+
 
 # Class for vertices
 @dataclass(frozen=True, repr=False)
@@ -157,6 +211,17 @@ class SGraph:
                         self.delete_edge(edge2)
                         exists = True
                         return exists
+                if(len(vv_edges)>=2):
+                    edge1 = vv_edges[-1]
+                    edge2 = vv_edges[0]
+                    if((edge1.typ == -edge2.typ) and
+                        (v2_edges.index(edge2) == v2_edges.index(edge1)+1)
+                    and (v1_edges.index(edge2) == v1_edges.index(edge1)+1)):
+                        self.delete_edge(edge1)
+                        self.delete_edge(edge2)
+                        exists = True
+                        return exists
+
         return exists
 
     # Cleans up redundant pairs of edges.
@@ -168,12 +233,14 @@ class SGraph:
     # Prints the abstract data of the graph
     # List of vertex indices, then edges = (init, term, type)
     def print_data(self):
-        print(list(range(len(self.vert))))
-        print(list(map(lambda x: x.col, self.vert)))
+        print("Vertices:", list(range(len(self.vert))))
+        print("Colors:", list(map(lambda x: x.col, self.vert)))
+        print("Edges: ", end='')
         for edge in self.edges:
             print("("+ str(self.vert.index(edge.initial))+ ", " +
                 str(self.vert.index(edge.terminal)) + ", " +
                 str(edge.typ) + "), ", end='')
+        print()
 
     # List of the first vertices in each color.
     def col_first_verts(self) -> List[SVertex]:
@@ -226,6 +293,39 @@ class SGraph:
                 (not self.check_connected(color1, color2))):
                     self.add_edge(v_col[color1], v_col[color2], 2, color1)
                     self.add_edge(v_col[color1], v_col[color2], -2, color1)
+
+    # Finds the connected component of a set
+    def find_conn_comp(self, conn_comp: Set[int]):
+        all_colors = list(range(self.colors))
+
+        old_conn_comp = set()
+        new_conn_comp = conn_comp
+
+        while(old_conn_comp != new_conn_comp):
+            old_conn_comp = deepcopy(new_conn_comp)
+            for i in all_colors:
+                if i not in old_conn_comp:
+                    for col in old_conn_comp:
+                        if((i<col) and self.check_connected(i, col)):
+                            new_conn_comp.add(i)
+                        elif((i>col) and self.check_connected(col, i)):
+                            new_conn_comp.add(i)
+
+        return new_conn_comp
+
+    # Makes sure the graph across colors is connected
+    def make_connected(self):
+        conn_comp = self.find_conn_comp({0})
+        want_conn = set(range(self.colors))
+
+        while(conn_comp != want_conn):
+
+            i = min({x for x in want_conn if x not in conn_comp})
+
+            self.add_edge(v_col[0], v_col[i], 2, 0)
+            self.add_edge(v_col[0], v_col[i], -2, 0)
+
+            conn_comp.update(self.find_conn_comp({i}))
 
     """
 
@@ -343,19 +443,82 @@ class SGraph:
 
         return hom_basis
 
-    # Connects a triple of colors with a loop.
-    def connect_triple(self, col1: int, col2: int, col3: int) -> Loop:
-        e1 = OEdge(self.max_connector(col1, col2), 1)
-        e2 = OEdge(self.max_connector(col2, col3), 1)
-        e3 = OEdge(self.max_connector(col1, col3), -1)
+    # Converts a loop of color indices into a loop in the spline graph
+    def convert_col_loop(self, col_loop: List[int]) -> Loop:
+        edge_list = []
 
-        path1 = self.connect_vertices(e3.initial, e1.initial)
-        path2 = self.connect_vertices(e1.terminal, e2.initial)
-        path3 = self.connect_vertices(e2.terminal, e3.terminal)
+        for i in range(len(col_loop)-1):
+            if(col_loop[i]>col_loop[i+1]):
+                max_conn = OEdge(
+                    edge=self.max_connector(col_loop[i+1], col_loop[i]),
+                    sign=-1)
+            else:
+                max_conn = OEdge(
+                    edge=self.max_connector(col_loop[i], col_loop[i+1]),
+                    sign=1)
 
-        return Loop([e1] + path2 + [e2] + path3 + [e3] + path1)
+            edge_list.append(max_conn)
+        path = []
 
-    # Finds the homology basis corresponding to the complete graph of colors.
+        for i in range(len(edge_list)-1):
+            e1 = edge_list[i]
+            e2 = edge_list[i+1]
+
+            connecting_path = self.connect_vertices(
+                e1.true_terminal, e2.true_initial)
+
+            path += [e1] + connecting_path
+
+        e_n = edge_list[-1]
+        e_1 = edge_list[0]
+        connecting_path = self.connect_vertices(
+            e_n.true_terminal, e_1.true_initial)
+
+        path += [e_n] + connecting_path
+
+        return Loop(path)
+
+    # Finds the graph of colors
+    def find_col_graph(self):
+        verti = set(range(self.colors))
+
+        edges_col = set()
+        edge_dict = dict()
+
+        for v in verti:
+            edge_dict[v] = set()
+
+        for i in verti:
+            for j in range(i+1, self.colors):
+                if(self.check_connected(i, j)):
+                    edges_col.add((i, j))
+                    edge_dict[i].add(j)
+                    edge_dict[j].add(i)
+
+        return (verti, edges_col, edge_dict)
+
+    # Finds a homology basis for the global graph across colors
+    # with no edges repeated
+    @cached_property
+    def global_color_graph_basis(self) -> List[Loop]:
+        hom_basis = []
+
+        verti, edges_col, edge_dict = self.find_col_graph()
+        mst_edges, mst_dict = find_mst(verti, edges_col, edge_dict)
+
+        edges_remaining = edges_col.difference(mst_edges)
+
+        for edge in edges_remaining:
+            init = edge[0]
+            term = edge[1]
+            path1 = find_path(verti, mst_edges, mst_dict, init, term)
+            new_loop = self.convert_col_loop(path1 + [init])
+            hom_basis.append(new_loop)
+
+        return hom_basis
+
+    # Finds the homology basis corresponding to the 
+    # (possibly not complete) graph of colors.
     @cached_property
     def complete_graph_hom_basis(self) -> List[Loop]:
         hom_basis = []
@@ -363,7 +526,8 @@ class SGraph:
         for col1 in range(self.colors):
             for col2 in range(col1+1, self.colors):
                 for col3 in range(col2+1, self.colors):
-                    hom_basis.append(self.connect_triple(col1, col2, col3))
+                    hom_basis.append(self.convert_col_loop(
+                        [col1, col2, col3, col1]))
 
         return hom_basis
 
@@ -372,7 +536,7 @@ class SGraph:
     def hom_basis(self):
         return self.all_single_color_hom_bases +\
             self. all_local_graph_hom_bases +\
-            self.complete_graph_hom_basis
+            self.global_color_graph_basis
 
     # Number of single color loops.
     @cached_property
@@ -487,6 +651,40 @@ class SGraph:
 
         return sgn
 
+    # The linking number of two sub-links prescribed by two colors
+    # This is only used when both sub-links are knots
+    # Needs the framing to determine the self linking number
+    def linking_number_links(self, col1: int, col2: int,
+    framing: List[int]) -> int:
 
+        if(col1==col2):
+            return framing[col1]
+        elif(col1<col2):
+            clasps = filter(lambda e: ((e.initial.col == col1)
+                and (e.terminal.col == col2)), self.edges)
+            link = 0
+            for e in clasps:
+                if(e.typ == 2):
+                    link -= 1
+                else:
+                    link += 1
+        else:
+            link = self.linking_number_links(col2, col1, framing)
 
+        return link
 
+    # Returns the linking matrix of a framed colored link
+    # Again, this is only used when each color has a single knot
+    def linking_matrix(self, framing: List[int]):
+
+        assert len(framing)>=self.colors, "Framing list should have {}\
+         elements instead of {} elements".format(self.colors, len(framing))
+
+        mat = [list(range(self.colors)) for i in range(self.colors)]
+
+        for col1 in range(self.colors):
+            for col2 in range(self.colors):
+                mat[col1][col2] = self.linking_number_links(
+                    col1, col2, framing)
+
+        return mat

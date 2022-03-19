@@ -216,7 +216,7 @@ class ColBraid(Braid):
 
         return graph
 
-    def make_graph(self, col_signs: List[int]) -> SGraph:
+    def make_graph_complete(self, col_signs: List[int]) -> SGraph:
         graph = self.init_graph(col_signs)
         self.add_clasps_hts(graph)
         graph.clean_graph()
@@ -224,6 +224,13 @@ class ColBraid(Braid):
         graph.make_complete()
         return graph
 
+    def make_graph(self, col_signs: List[int]) -> SGraph:
+        graph = self.init_graph(col_signs)
+        self.add_clasps_hts(graph)
+        graph.clean_graph()
+        graph.colors_connected()
+        graph.make_connected()
+        return graph
 
     
 

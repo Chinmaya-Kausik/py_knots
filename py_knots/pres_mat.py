@@ -28,6 +28,10 @@ class PolyMatrix:
 
         M = copy.deepcopy(self.M)
         variables = self.variables
+
+        if(M==Matrix([])):
+            return S(1)
+
         n = shape(M)[0]
 
         for k in range(n-1):
@@ -39,7 +43,7 @@ class PolyMatrix:
                         singular = False
                         swap_rows(k, j, M)
                 if(singular):
-                    return symbols("0")
+                    return S(0)
 
             # Update matrix
             for i in range(k+1, n):
@@ -77,21 +81,19 @@ class PolyMatrix:
 
     # The Conway potential function
     def conway_potential_function(self, graph: SGraph) -> Add:
-        print("Started computing")
         M = copy.deepcopy(self.M)
         variables = copy.deepcopy(self.variables)
-        print("Ready to compute")
         f = PolyMatrix(variables, -M).bareiss_det
-        print("Got here")
 
         for var in variables:
             f = f.subs(var, var**(-2))
 
         f = f*(prod(variables)**shape(self.M)[0])
 
-        for i in range(len(variables)):
-            e = variables[i]
-            f = f*(e-e**(-1))**(graph.euler_char(i)-1)
+        if(len(variables) != 1):
+            for i in range(len(variables)):
+                e = variables[i]
+                f = f*(e-e**(-1))**(graph.euler_char(i)-1)
 
         cpf = (cancel(f)*graph.clasp_sign).as_expr()
         return cpf
@@ -114,9 +116,8 @@ class PolyMatrix:
         M = copy.deepcopy(self.M)
         for i in range(len(self.variables)):
             M = M.subs(self.variables[i], omega[i])
-        M = np.array(mult*M).astype(np.float64)
+        M = np.array(mult*M, dtype='complex128')
         eig_val, eig_vect = eigh(M)
-        print(eig_val)
         sgn = 0
         for e in eig_val:
             if(e>0):
@@ -156,8 +157,42 @@ def presentation_matrix(graph: SGraph) -> PolyMatrix:
         M = Matrix(graph.gen_seifert_matrix(col_lifts))
         pres = pres + M*sign*mult
 
-    print("Made the matrix")
     return PolyMatrix(variables, pres)
+
+
+# Computes the presentation matrix for the graph.
+def create_seifert_matrices(graph: SGraph) -> str:
+
+    pres = zeros(len(graph.hom_basis))
+    seif = ""
+    variables = []
+
+    # Initialize variables
+    for j in range(graph.colors):
+        exec("""t{} = symbols("t{}")""".format(j, j))
+        exec("variables.append(t{})".format(j), None, locals())
+
+    # Add the generalized Seifert matrix for each sign tuple.
+    for i in range(2**graph.colors):
+        col_lifts = [1]*graph.colors
+        mult = 1
+
+        tally = int(i)
+        for j in range(graph.colors):
+            if(tally %2 == 0):
+                mult = mult*variables[graph.colors-j-1]
+                col_lifts[graph.colors-j-1] = -1
+                tally /= 2
+            else:
+                tally = (tally-1)/2
+
+        sign = prod(col_lifts)
+
+        M = Matrix(graph.gen_seifert_matrix(col_lifts))
+        pres = pres + M*sign*mult
+        seif += str(col_lifts) + "\n" + str(M) + "\n\n"
+
+    return str(pres) + "\n\n\n" + seif
 
 
 
