@@ -77,3 +77,9 @@ pm = presentation_matrix(graph)
 print(pm.conway_potential_function(graph))
 print(pm.multivar_alexander_poly(graph))
 print("\n\nsignature", pm.signature([complex(-1,0)]*graph.colors))"""
+
+"""pathex=['C:\\Users\\chinm\\Documents\\GitHub\\py_knots\\py_knots'],
+             binaries=[],
+             datas=[],
+             hiddenimports=['sgraph', 'braid', 'col_perm',
+             'visualization', 'casson_gordon', 'pres_mat'],"""
