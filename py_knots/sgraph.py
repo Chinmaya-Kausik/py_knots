@@ -317,6 +317,7 @@ class SGraph:
     def make_connected(self):
         conn_comp = self.find_conn_comp({0})
         want_conn = set(range(self.colors))
+        v_col = self.vert
 
         while(conn_comp != want_conn):
 

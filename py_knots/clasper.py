@@ -34,7 +34,6 @@ class Clasper(tk.Frame):
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=1)
 
         # Configure variables
         self.braid_str = tk.StringVar()
@@ -54,9 +53,6 @@ class Clasper(tk.Frame):
         self.signature = Signature(self)
         self.signature.grid(
             column=2, row=4, pady=10, rowspan=6, sticky='N')
-        self.cg = Casson_Gordon(self)
-        self.cg.grid(
-            column=3, row=4, pady=10, rowspan=6, sticky='N')
 
         self.braid_visual = tk.Frame(self)
         self.braid_visual.grid(
@@ -83,7 +79,8 @@ class Clasper(tk.Frame):
         ttk.Label(
             self, text='''Braids - LinkInfo format or comma/space '''+
             '''separated. Colors and signature inputs - space separated.\n'''+
-            '''Press enter to compute invariants with defaults''',
+            '''Press enter to compute invariants with defaults.'''
+            ''' See paper for details about the C-Complex.''',
             font=(font_style, font_size), background='cyan').grid(
             column=0, row=0, columnspan=4)
 
@@ -101,7 +98,7 @@ class Clasper(tk.Frame):
             """ or '2, 3, -2, 3, 1, 2, 3' or """+
             """'{4, {2, 3, -2, 3, 1, 2, 3}}'""",
             font=(font_style, font_size), background='cyan').grid(
-            column=1, row=2, pady=10, sticky='W')
+            column=1, row=2, pady=10, sticky='W', columnspan=3)
 
         # Creating a style object
         style = ttk.Style()
@@ -137,10 +134,6 @@ class Clasper(tk.Frame):
         ttk.Button(self, text="Get Seifert matrices",
             command=self.get_seifert_matrices, style='C.TButton').grid(
             column=2, row=10, pady=10)
-
-        ttk.Button(self, text="Casson-Gordon invariant",
-            command=self.cg.get_casson_gordon, style='C.TButton').grid(
-            column=3, row=10, pady=10)
 
     # Compute invariants with defaults
     def compute_with_defaults(self, int: int):
@@ -828,9 +821,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Clasper")
 
-    window_width = 2800
-    window_height = 2400
-
     # Get the screen dimension
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
@@ -839,13 +829,57 @@ if __name__ == "__main__":
     center_x = int(screen_width/2)
     center_y = int(screen_height/2)
 
+    window_width = screen_width
+    window_height = screen_height
+
     # Set the position of the window to the center of the screen
     root.geometry(f'{window_width}x{window_height}+{center_x}+{0}')
 
     root.state('zoomed')
 
-    clasper = Clasper(root)
-    clasper.pack(side="top", fill="both", expand=True)
+    clasper_canvas = tk.Canvas(root)
+    hbar = tk.Scrollbar(root, orient='horizontal',
+        command=clasper_canvas.xview)
+    scrollbar = tk.Scrollbar(root, orient='vertical',
+        command=clasper_canvas.yview)
+
+    hbar.pack(side="bottom", fill="both")
+    clasper_canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+    scrollbar.pack(side="right", fill="both")
+
+    clasper_canvas['yscrollcommand'] = scrollbar.set
+    clasper_canvas['xscrollcommand'] = hbar.set
+
+    clasper = Clasper(clasper_canvas)
+    
+    def onCanvasConfigure(e):
+        clasper_canvas.configure(scrollregion=clasper_canvas.bbox("all"))
+        clasper_canvas.itemconfig('frame',
+            height=2800,
+            width=3000)
+
+    clasper_canvas.create_window(0, 0,
+            height=2800,
+            width=3000,
+        window=clasper, anchor="nw", tags="frame")
+
+    clasper_canvas.bind("<Configure>", onCanvasConfigure)
+
+    clasper_canvas.configure(scrollregion=clasper_canvas.bbox("all"))
+    clasper_canvas.itemconfig('frame',
+            height=2800,
+            width=3000)
+
+    def on_mousewheel(event):
+        clasper_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def on_shift_mousewheel(event):
+        clasper_canvas.xview_scroll(int(-1*(event.delta/120)), "units")
+    
+    root.bind_all("<MouseWheel>", on_mousewheel)
+    root.bind_all("<Shift-MouseWheel>", on_shift_mousewheel)
+
+    
 
     root.bind('<Return>', clasper.compute_with_defaults)
 

@@ -7,7 +7,7 @@ from casson_gordon import *
 
 p = ColBraid([2, 3, -2, 3, 1, 2, 3], 4, [0, 1, 2])
 
-p = ColBraid([1, 1], 2, [0, 1])
+p = ColBraid([2, 3, -2, 2], 6, [0, 1])
 
 print(p.cycle_decomp, p.braid, p.strands)
 
@@ -30,7 +30,7 @@ print("Graph = ", verti, edges_col, edge_dict)
 print("MST = ", find_mst(verti, edges_col, edge_dict))
 visualize_braid(p)
 
-graph.print_data()
+"""graph.print_data()
 framing = [-4, 2]
 q=5
 char_list =[4, 2]
@@ -43,7 +43,7 @@ s = symbols("s")
 k = symbols("k")
 cg_var, cg_sym = casson_gordon_symbolic(framing, p)
 print(cg_sym.subs(cg_var[0], 2*s).subs(cg_var[1], s))
-print(graph.linking_matrix([0, 0]))
+print(graph.linking_matrix([0, 0]))"""
 
 
 """
