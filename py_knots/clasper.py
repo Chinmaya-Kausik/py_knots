@@ -127,11 +127,11 @@ class Clasper(tk.Frame):
         command=self.get_invariants, style='C.TButton').grid(
             column=0, row=10, pady=10)
 
-        ttk.Button(self, text="Get LaTeX invariants",
+        ttk.Button(self, text="Invariants in LaTeX",
             command=self.get_latex, style='C.TButton').grid(
             column=1, row=10, pady=10)
 
-        ttk.Button(self, text="Get Seifert matrices",
+        ttk.Button(self, text="Export Seifert matrices",
             command=self.get_seifert_matrices, style='C.TButton').grid(
             column=2, row=10, pady=10)
 
@@ -703,7 +703,7 @@ class Signature(tk.Frame):
 
             if(signature_option == 1):
                 omega = [complex(-1, 0)]*graph.colors
-                ttk.Label(self.signature_default, text="= "+ "-1 "*graph.colors,
+                ttk.Label(self.signature_default, text="= "+ "1/2 "*graph.colors,
                     font=(font_style, font_size)).pack(anchor='w')
             else:
                 complex_tuple = [eval(x) for x in
@@ -878,8 +878,6 @@ if __name__ == "__main__":
     
     root.bind_all("<MouseWheel>", on_mousewheel)
     root.bind_all("<Shift-MouseWheel>", on_shift_mousewheel)
-
-    
 
     root.bind('<Return>', clasper.compute_with_defaults)
 
