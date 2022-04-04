@@ -2,4 +2,4 @@ Implementing various link algorithms in Python, starting with obtaining standard
 
 # Instructions for Windows
 
-Download and run clasper_2_1.exe from the top folder.
+Download and run clasper_2_1_1.exe from the top folder.
