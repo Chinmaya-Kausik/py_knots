@@ -115,8 +115,8 @@ class Clasper(tk.Frame):
 
         ttk.Checkbutton(self, text="All Seifert surfaces intersecting",
             style='C.TCheckbutton',
-            variable=self.complete_graph).grid(column=3, row=1,
-            padx=0, pady=10, sticky='W')
+            variable=self.complete_graph).grid(column=2, row=1,
+            padx=30, pady=10, sticky='W')
         
         # Setup for printing the cycle decomposition
         ttk.Button(self, text="Cycle Decomposition", command=self.compute_cyc,
