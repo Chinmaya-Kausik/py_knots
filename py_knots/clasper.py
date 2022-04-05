@@ -42,6 +42,11 @@ class Clasper(tk.Frame):
         # Configure frames for checking the braid
         self.braid_check = tk.Frame(self)
         self.cycle_decomp_frame = tk.Frame(self)
+        self.euler_char_frame = tk.Frame(self)
+        self.euler_char_frame.grid(column=2, row=3, pady=10, sticky='W')
+        self.euler_char_frame.grid_columnconfigure(0, weight=3)
+        self.euler_char_frame.grid_columnconfigure(0, weight=1)
+        self.euler_char_frame.euler_char_val = tk.Frame(self.euler_char_frame)
 
         # Configure frames for everything
         self.strands = Strands(self)
@@ -65,7 +70,6 @@ class Clasper(tk.Frame):
         self.invariant_frame.grid(column=0, row=11,
             columnspan=4, rowspan=3)
 
-
         """
 
 
@@ -80,7 +84,8 @@ class Clasper(tk.Frame):
             self, text='''Braids - LinkInfo format or comma/space '''+
             '''separated. Colors and signature inputs - space separated.\n'''+
             '''Press enter to compute invariants with defaults.'''
-            ''' See paper for details about the C-Complex.''',
+            ''' See paper for details about the C-Complex.\n'''+
+            '''Written by Chinmaya Kausik.''',
             font=(font_style, font_size), background='cyan').grid(
             column=0, row=0, columnspan=4)
 
@@ -122,6 +127,11 @@ class Clasper(tk.Frame):
         ttk.Button(self, text="Cycle Decomposition", command=self.compute_cyc,
             style='C.TButton').grid(column=0, row=3, pady=10)
 
+        # Setup for printing the Euler Characteristic of the C-Complex
+        ttk.Button(self.euler_char_frame, text="Euler Characteristic of C-Complex",
+            command=self.get_sgraph_euler_char,
+            style='C.TButton').grid(column=0, row=0, pady=10, sticky='W')
+
         # Button to compute invariants
         ttk.Button(self, text="Compute link invariants",
         command=self.get_invariants, style='C.TButton').grid(
@@ -150,18 +160,23 @@ class Clasper(tk.Frame):
         new_braid = braid[start:]
         braid1 = new_braid[
             new_braid.index('{')+1: new_braid.index('}')].split(',')
+        braid1 = list(filter(lambda x: x.strip()!="", braid1))
         braid1 = list(map(lambda x: int(x), braid1))
 
         return Braid(braid1, strands)
 
     # Processing comma separated inputs
     def csv_input(self, braid: str) -> List[int]:
-        braid1 = [int(x) for x in braid.strip().split(" ")]
+        braid1 = braid.strip().split(",")
+        braid1 = list(filter(lambda x: x.strip()!="", braid1))
+        braid1 = [int(x) for x in braid1]
         return braid1
 
     # Processing space separated inputs
     def space_input(self, braid: str) -> List[int]:
-        braid1 = [int(x) for x in braid.strip().split(" ")]
+        braid1 = braid.strip().split(" ")
+        braid1 = list(filter(lambda x: x.strip()!="", braid1))
+        braid1 = [int(x) for x in braid1]
         return braid1
 
     # Command for computing the cycle decomposition and generating the braid
@@ -173,6 +188,20 @@ class Clasper(tk.Frame):
         p_braid = self.strands.make_braid()
         ttk.Label(self.cycle_decomp_frame, text=str(p_braid.cycle_decomp),
             font=(font_style, font_size)).pack()
+
+    # Command for computing the cycle decomposition and generating the braid
+    def get_sgraph_euler_char(self) -> Braid:
+        self.euler_char_frame.euler_char_val.destroy()
+        self.euler_char_frame.euler_char_val = tk.Frame(self.euler_char_frame)
+        self.euler_char_frame.euler_char_val.grid(
+            column=1, row=0, padx=20, pady=10, sticky='E')
+        try:
+            graph = self.color.get_graph()
+            ttk.Label(self.euler_char_frame.euler_char_val,
+                text="= "+str(graph.sgraph_euler_char()),
+                font=(font_style, font_size)).pack()
+        except Exception:
+            pass
 
     # Print latex 
     def get_latex(self):
@@ -627,6 +656,7 @@ class Color(tk.Frame):
             else:
                 p, col_signs = find_min_perm_complete(p, col_signs, 50)
                 graph= p.make_graph_complete(col_signs)
+
             return graph
 
         except ValueError:

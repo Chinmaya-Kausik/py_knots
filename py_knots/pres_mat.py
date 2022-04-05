@@ -192,7 +192,8 @@ def create_seifert_matrices(graph: SGraph) -> str:
         pres = pres + M*sign*mult
         seif += str(col_lifts) + "\n" + str(M) + "\n\n"
 
-    return str(pres) + "\n\n\n" + seif
+    return "Presentation Matrix\n" +\
+            str(pres) + "\n\n\nGeneralized Seifert Matrices\n\n" + seif
 
 
 

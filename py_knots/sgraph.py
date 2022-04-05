@@ -641,6 +641,19 @@ class SGraph:
 
         return graph_v - graph_e
 
+    # Euler characteristic of the spline graph
+    def sgraph_euler_char(self) -> int:
+
+        graph_v = 0 
+        for v in self.vert:
+            graph_v += 1
+
+        graph_e = 0
+        for edge in self.edges:
+            graph_e += 1 
+
+        return graph_v - graph_e
+
     # The sign of the clasp complex in the sense of Cimasoni.
     # The product of the signs of clasps
     @cached_property

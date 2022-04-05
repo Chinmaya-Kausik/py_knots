@@ -10,7 +10,8 @@ def visualize_braid(p: ColBraid) -> fig.Figure:
     fig = plt.figure(figsize=(20, 6), dpi=100)
     x_scale = 1/(float(2*len(p.braid)+4.5))
     y_scale = 1/(float(p.strands))
-    colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
+    colors = ["r", "g", "b", "c", "m", "y", "k"]
+    colors = colors*100
     vert = p.init_vert_perm
 
     # Adds a horizontal line
@@ -87,7 +88,8 @@ def visualize_clasp_complex(graph: SGraph) -> fig.Figure:
     fig = plt.figure(figsize=(20, 6), dpi=100)
     x_scale = 1/(float(2*len(graph.edges)+3.5))
     y_scale = 1/(float(len(graph.vert)+0.5))
-    colors = ["r", "g", "b", "c", "m", "y", "k", "w"]
+    colors = ["r", "g", "b", "c", "m", "y", "k"]
+    colors=colors*100
     vert = graph.vert
 
     # Adds a horizontal line

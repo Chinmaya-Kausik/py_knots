@@ -7,7 +7,7 @@ from casson_gordon import *
 
 p = ColBraid([2, 3, -2, 3, 1, 2, 3], 4, [0, 1, 2])
 
-p = ColBraid([2, 3, -2, 2], 6, [0, 1])
+p = Braid([1, 10], 11)
 
 print(p.cycle_decomp, p.braid, p.strands)
 
