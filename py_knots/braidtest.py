@@ -5,9 +5,10 @@ from visualization import *
 from col_perm import *
 from casson_gordon import *
 
-p = ColBraid([2, 3, -2, 3, 1, 2, 3], 4, [0, 1, 2])
+p = ColBraid([2, 4, 5, 2, 4], 6, [0, 1, 2])
 
-p = Braid([1, 10], 11)
+p = Braid([1, 3, 3], 4)
+
 
 print(p.cycle_decomp, p.braid, p.strands)
 
@@ -22,28 +23,20 @@ print("Color signs: ", col_signs)
 print(" ")
 
 p = ColBraid(p.braid, p.strands, col_list)
-p, col_signs = find_min_perm(p, col_signs, 500)
-graph = p.make_graph(col_signs)
+p, col_signs = find_min_perm_complete(p, col_signs, 500)
+graph = p.make_graph_complete(col_signs)
 
 verti, edges_col, edge_dict = graph.find_col_graph()
 print("Graph = ", verti, edges_col, edge_dict)
 print("MST = ", find_mst(verti, edges_col, edge_dict))
 visualize_braid(p)
 
-"""graph.print_data()
-framing = [-4, 2]
-q=5
-char_list =[4, 2]
+graph.print_data()
 
 pm = presentation_matrix(graph)
-print("Variables", pm.variables)
 
-print(casson_gordon(framing, q, char_list, p))
-s = symbols("s")
-k = symbols("k")
-cg_var, cg_sym = casson_gordon_symbolic(framing, p)
-print(cg_sym.subs(cg_var[0], 2*s).subs(cg_var[1], s))
-print(graph.linking_matrix([0, 0]))"""
+print(pm.conway_potential_function(graph))
+print(pm.signature([-1,-1,-1,-1]))
 
 
 """

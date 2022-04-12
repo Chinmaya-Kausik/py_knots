@@ -35,8 +35,12 @@ def transpose(n: int, lst: List) -> List:
 # For generating spline graphs, we use ColBraid
 @dataclass(frozen=True)
 class Braid:
-    braid: List[int]
+    braid_wrong: List[int]
     strands: int
+
+    @cached_property
+    def braid(self):
+        return [-x for x in self.braid_wrong]
 
     # Finds the permutation of a braid
     @cached_property

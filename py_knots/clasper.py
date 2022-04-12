@@ -99,9 +99,9 @@ class Clasper(tk.Frame):
 
         # (1, 2) Examples for braid entries
         ttk.Label(
-            self, text="""Example: '2 3 -2 3 1 2 3'"""+
-            """ or '2, 3, -2, 3, 1, 2, 3' or """+
-            """'{4, {2, 3, -2, 3, 1, 2, 3}}'""",
+            self, text="""Example: '-2 -3 2 -3 -1 -2 -3'"""+
+            """ or '-2, -3, 2, -3, -1, -2, -3' or """+
+            """'{4, {-2, -3, 2, -3, -1, -2, -3}}'""",
             font=(font_style, font_size), background='cyan').grid(
             column=1, row=2, pady=10, sticky='W', columnspan=3)
 
@@ -243,6 +243,7 @@ class Clasper(tk.Frame):
         self.invariant_frame.grid(column=0, row=11,
             columnspan=4, rowspan=3)
 
+        p = self.strands.make_braid()
         graph = self.invariant_frame.graph
 
         if(file_name):
@@ -251,6 +252,8 @@ class Clasper(tk.Frame):
 
             f = open(file_name, 'w+')
             seif = create_seifert_matrices(graph)
+            f.write("Braid: "+str(p.braid_wrong))
+            f.write("\nStrands: "+str(p.strands)+"\n\n")
             f.write(seif)
             f.close()
 
@@ -347,13 +350,18 @@ class Inv(tk.Frame):
             column=1, row=1, y_pad=10, sticky='W',
             columnspan=3, rowspan=1, size=(2000, 50))
 
-        ttk.Label(self, text='Signature:',
+        ttk.Label(self, text='Cimasoni-Florens Signature:',
             font=(font_style, font_size)).grid(
             column=0, row=2, pady=15)
 
-        ttk.Label(self, text=str(pm.signature(omega)),
-            font=(font_style, 30)).grid(
+        signat = pm.signature(omega)
+
+        ttk.Label(self, text=str(signat[0]), font=(font_style, 30)).grid(
             column=1, row=2, pady=15, sticky='W')
+
+        eig_val = "(Eigenvalues: {})".format(list(signat[1]))
+        ttk.Label(self, text=str(eig_val), font=(font_style, 25)).grid(
+            column=2, row=2, columnspan=2, padx=10, pady=15, sticky='W')
 
     # Renders latex as a label and places it on the grid
     def make_latex_label(self, latex_string: str, column: int,

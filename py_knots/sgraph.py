@@ -286,6 +286,7 @@ class SGraph:
     # Makes sure the graph across colors is complete
     def make_complete(self):
         v_col = self.col_first_verts()
+        print("v_col", v_col)
         for color1 in range(len(v_col)):
             for color2 in range(len(v_col)):
                 if((color1 < color2) and
@@ -317,7 +318,7 @@ class SGraph:
     def make_connected(self):
         conn_comp = self.find_conn_comp({0})
         want_conn = set(range(self.colors))
-        v_col = self.vert
+        v_col = self.col_first_verts()
 
         while(conn_comp != want_conn):
 

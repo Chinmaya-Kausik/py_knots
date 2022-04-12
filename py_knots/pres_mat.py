@@ -113,18 +113,21 @@ class PolyMatrix:
         mult = 1 
         for c in omega:
             mult *= (1-c.conjugate())
+        print(mult)
         M = copy.deepcopy(self.M)
         for i in range(len(self.variables)):
             M = M.subs(self.variables[i], omega[i])
         M = np.array(mult*M, dtype='complex128')
         eig_val, eig_vect = eigh(M)
+        print("M", M)
+        print("eigval", eig_val)
         sgn = 0
         for e in eig_val:
-            if(e>0):
-                sgn -= 1
-            else:
+            if(e>10**(-5.0)):
                 sgn += 1
-        return sgn
+            elif(e<-10**(-5.0)):
+                sgn -= 1
+        return (sgn, eig_val)
  
 
 # Computes the presentation matrix for the graph.
