@@ -1,8 +1,12 @@
 Implementing various link algorithms in Python, starting with obtaining standard and generalized Seifert Matrices from the braid description of a colored link.
 
-# Instructions for Windows
+# Instructions for Windows users
 
 Download and run clasper_2_3.exe from the top folder.
+
+# Instructions for other users
+
+Clone/download this repository and run the python program clasper.py.
 
 # Note for developers
 
