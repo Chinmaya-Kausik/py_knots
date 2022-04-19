@@ -134,6 +134,7 @@ class PolyMatrix:
 def presentation_matrix(graph: SGraph) -> PolyMatrix:
 
     pres = zeros(len(graph.hom_basis))
+    seif = ""
     variables = []
 
     # Initialize variables
@@ -159,8 +160,11 @@ def presentation_matrix(graph: SGraph) -> PolyMatrix:
 
         M = Matrix(graph.gen_seifert_matrix(col_lifts))
         pres = pres + M*sign*mult
+        seif += str(col_lifts) + "\n" + str(M) + "\n\n"
 
-    return PolyMatrix(variables, pres)
+    return ("Presentation Matrix\n" +\
+            str(pres) + "\n\n\nGeneralized Seifert Matrices\n\n" + seif,
+            PolyMatrix(variables, pres))
 
 
 # Computes the presentation matrix for the graph.

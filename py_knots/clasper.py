@@ -44,9 +44,22 @@ class Clasper(tk.Frame):
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
 
-        # Configure variables
+        # Configure counter/control variables
+        self.braid_inv_control = ""
+        self.braid_seif_control = ""
+        self.computed_invariants = False
+        self.computed_seif = False
+
+        # Configure input variables
         self.braid_str = tk.StringVar()
         self.complete_graph = tk.IntVar(value=0)
+
+        # Configure invariant variables
+        self.cpf = 0
+        self.alexander = 0
+        self.signature_value = 0
+        self.seif = ""
+        self.pm = 0
 
         # Configure frames for checking the braid
         self.braid_check = tk.Frame(self)
@@ -215,20 +228,41 @@ class Clasper(tk.Frame):
     # Print latex 
     def get_latex(self):
         new_window = tk.Toplevel(self)
+
         try:
-            graph = self.color.get_graph()
-            pm = presentation_matrix(graph)
-            cpf = tk.Text(new_window, font=(font_style, font_size))
-            cpf.insert(1.0, "Conway Potential Function:\n"+
-                latex(pm.conway_potential_function(graph)))
-            cpf.pack()
-            cpf.configure(state="disabled")
+            if((self.braid_inv_control.strip() == self.braid_str.get().strip())
+            and self.computed_invariants):
+                pass
+                
+            else:
+                graph = self.color.get_graph()
+
+                # Print the Euler characteristic of the SGraph
+                self.get_sgraph_euler_char()
+
+                if(self.braid_seif_control.strip() !=
+                self.braid_str.get().strip()):
+                    (self.seif, self.pm) = presentation_matrix(graph)
+
+                self.cpf = self.pm.conway_potential_function(graph)
+                self.alexander = self.pm.multivar_alexander_poly(graph)
+
+                self.computed_invariants = True
+                self.computed_seif = True
+                self.braid_inv_control = self.braid_str.get()
+                self.braid_seif_control = self.braid_str.get()
+            
+            cpf_text = tk.Text(new_window, font=(font_style, font_size))
+            cpf_text.insert(1.0, "Conway Potential Function:\n"+
+                latex(self.cpf))
+            cpf_text.pack()
+            cpf_text.configure(state="disabled")
 
             multi_var_alexander = tk.Text(
                 new_window, font=(font_style, font_size))
             multi_var_alexander.insert(1.0,
                 "Mutivariable Alexander Polynomial:\n"+
-                latex(pm.conway_potential_function(graph)))
+                latex(self.alexander))
             multi_var_alexander.pack()
             multi_var_alexander.configure(state="disabled")
 
@@ -239,12 +273,26 @@ class Clasper(tk.Frame):
                 "selectbackground"))
             multi_var_alexander.configure(
                 inactiveselectbackground=cpf.cget("selectbackground"))
+
             
         except ValueError:
             pass
 
     # Save the seifert matrices to a file
     def get_seifert_matrices(self):
+
+        if((self.braid_seif_control.strip() == self.braid_str.get().strip())
+        and self.computed_invariants):
+            pass
+            
+        else:
+            graph = self.color.get_graph()
+
+            # Print the Euler characteristic of the SGraph
+            self.get_sgraph_euler_char()
+
+            (self.seif, self.pm) = presentation_matrix(graph)
+
         file_name = tk.filedialog.asksaveasfilename()
 
         self.invariant_frame.destroy()
@@ -260,21 +308,20 @@ class Clasper(tk.Frame):
                 file_name += ".txt"
 
             f = open(file_name, 'w+')
-            seif = create_seifert_matrices(graph)
             f.write("Braid: "+str(p.braid_wrong))
             f.write("\nStrands: "+str(p.strands)+"\n\n")
-            f.write(seif)
+            f.write(self.seif)
             f.close()
 
     # Command for computing and displaying invariants
     def get_invariants(self):
 
         self.invariant_frame.destroy()
+        self.view_braid()
+        self.view_c_complex()
         self.invariant_frame = Inv(self)
         self.invariant_frame.grid(column=0, row=11,
             columnspan=4, rowspan=3)
-        self.view_braid()
-        self.view_c_complex()
 
     # Command to view the braid
     def view_braid(self):
@@ -341,13 +388,38 @@ class Inv(tk.Frame):
 
         omega = parent.signature.get_omega()
 
-        pm = presentation_matrix(graph)
+        # Print the Euler characteristic of the SGraph
+        self.parent.get_sgraph_euler_char()
+
+        if((self.parent.braid_inv_control.strip() ==
+            self.parent.braid_str.get().strip())
+        and self.parent.computed_invariants):
+            pass
+            
+        else:
+            graph = self.parent.color.get_graph()
+
+            # Print the Euler characteristic of the SGraph
+            self.parent.get_sgraph_euler_char()
+
+            if(self.parent.braid_seif_control.strip() !=
+            self.parent.braid_str.get().strip()):
+                (self.parent.seif, self.parent.pm) = presentation_matrix(graph)
+
+            self.parent.cpf = self.parent.pm.conway_potential_function(graph)
+            self.parent.alexander = \
+                self.parent.pm.multivar_alexander_poly(graph)
+
+            self.parent.computed_invariants = True
+            self.parent.computed_seif = True
+            self.parent.braid_inv_control = self.parent.braid_str.get()
+            self.parent.braid_seif_control = self.parent.braid_str.get()
 
         ttk.Label(self, text='Conway Potential Function:',
             font=(font_style, font_size)).grid(
             column=0, row=0, pady=10)
 
-        self.make_latex_label(latex(pm.conway_potential_function(graph)),
+        self.make_latex_label(latex(self.parent.cpf),
             column=1, row=0, y_pad=10, sticky='W',
             columnspan=3, rowspan=1, size=(2000, 100))
 
@@ -355,7 +427,7 @@ class Inv(tk.Frame):
             font=(font_style, font_size)).grid(
             column=0, row=1, pady=10)
 
-        self.make_latex_label(latex(pm.multivar_alexander_poly(graph)),
+        self.make_latex_label(latex(self.parent.alexander),
             column=1, row=1, y_pad=10, sticky='W',
             columnspan=3, rowspan=1, size=(2000, 50))
 
@@ -363,7 +435,7 @@ class Inv(tk.Frame):
             font=(font_style, font_size)).grid(
             column=0, row=2, pady=15)
 
-        signat = pm.signature(omega)
+        signat = self.parent.pm.signature(omega)
 
         ttk.Label(self, text=str(signat[0]), font=(font_style, 30)).grid(
             column=1, row=2, pady=15, sticky='W')
