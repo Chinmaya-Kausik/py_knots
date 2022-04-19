@@ -16,10 +16,19 @@ from pres_mat import *
 from visualization import *
 from casson_gordon import *
 from typing import List, Tuple, Callable, Dict
+from math import log10, floor
 
 
 font_style = "Calibri"
 font_size = 25
+
+
+# Function for rounding eigenvalues
+def round_to_2(x: float):
+    if(x==0):
+        return 0
+    else:
+        return round(x, -int(floor(log10(abs(x))))+1)
 
 
 # Class for main window
@@ -359,7 +368,9 @@ class Inv(tk.Frame):
         ttk.Label(self, text=str(signat[0]), font=(font_style, 30)).grid(
             column=1, row=2, pady=15, sticky='W')
 
-        eig_val = "(Eigenvalues: {})".format(list(signat[1]))
+        eig_val_str = str([round_to_2(x) for x in signat[1]])[1:-1]
+
+        eig_val = "(Eigenvalues: "+eig_val_str+")"
         ttk.Label(self, text=str(eig_val), font=(font_style, 25)).grid(
             column=2, row=2, columnspan=2, padx=10, pady=15, sticky='W')
 
