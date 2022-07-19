@@ -283,7 +283,7 @@ class Clasper(tk.Frame):
 
         if((self.braid_seif_control.strip() == self.braid_str.get().strip())
         and self.computed_invariants):
-            pass
+            graph = self.invariant_frame.graph
             
         else:
             graph = self.color.get_graph()
@@ -296,12 +296,13 @@ class Clasper(tk.Frame):
         file_name = tk.filedialog.asksaveasfilename()
 
         self.invariant_frame.destroy()
-        self.invariant_frame = Inv(self)
+        self.invariant_frame = tk.Frame(self)
+        self.view_braid()
+        self.view_c_complex()
         self.invariant_frame.grid(column=0, row=11,
             columnspan=4, rowspan=3)
 
         p = self.strands.make_braid()
-        graph = self.invariant_frame.graph
 
         if(file_name):
             if("." not in file_name):
@@ -332,7 +333,7 @@ class Clasper(tk.Frame):
         self.braid_visual.destroy()
         self.braid_visual = tk.Frame(self)
         self.braid_visual.grid(
-            column=0, row=14, pady=10, columnspan=4)
+            column=0, row=15, pady=10, columnspan=4)
 
         self.braid_fig = visualize_braid(self.color.get_col_braid())
 
@@ -353,7 +354,7 @@ class Clasper(tk.Frame):
         self.ccomplex_visual.destroy()
         self.ccomplex_visual = tk.Frame(self)
         self.ccomplex_visual.grid(
-            column=0, row=15, pady=10, columnspan=4)
+            column=0, row=16, pady=10, columnspan=4)
 
         self.ccomplex_fig = visualize_clasp_complex(self.color.get_graph())
 
@@ -445,6 +446,16 @@ class Inv(tk.Frame):
         eig_val = "(Eigenvalues: "+eig_val_str+")"
         ttk.Label(self, text=str(eig_val), font=(font_style, 25)).grid(
             column=2, row=2, columnspan=2, padx=10, pady=15, sticky='W')
+
+        ttk.Label(self, text='Nullity:',
+            font=(font_style, font_size)).grid(
+            column=0, row=3, pady=15)
+
+        nullity = [round_to_2(x) for x in signat[1]].count(0)
+
+        ttk.Label(self, text=str(nullity), font=(font_style, 30)).grid(
+            column=2, row=3, pady=15, sticky='W')
+
 
     # Renders latex as a label and places it on the grid
     def make_latex_label(self, latex_string: str, column: int,
